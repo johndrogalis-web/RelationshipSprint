@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relationship Sprints</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #9a9690;
+    --text3: #5a5754;
+    --green: #1D9E75;
+    --green-bg: #0d3328;
+    --green-text: #5fcca4;
+    --amber: #BA7517;
+    --amber-bg: #2e1f06;
+    --amber-text: #e8a84a;
+    --coral: #D85A30;
+    --coral-bg: #2e1208;
+    --coral-text: #f0895e;
+    --pink: #D4537E;
+    --pink-bg: #2e0d1c;
+    --pink-text: #f07aa0;
+    --red-bg: #2e0a0a;
+    --red-text: #f07070;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; min-height: 100vh; }
+  .app { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  .header { padding: 1.5rem 0 1.25rem; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+  .header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 8px 6px; font-size: 13px; font-weight: 500; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .tab:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 11px; font-weight: 500; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 10px 12px; font-size: 14px;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); font-family: inherit;
+    transition: border-color 0.15s; outline: none;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--border2); }
+  .field textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+  .field select option { background: #1a1a1a; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 > div { flex: 1; }
+  .difficulty { display: flex; gap: 6px; }
+  .diff-btn {
+    flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500;
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: transparent; color: var(--text2); cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .diff-btn:hover { border-color: var(--border2); color: var(--text); }
+  .diff-btn.sel-light  { background: var(--green-bg);  color: var(--green-text);  border-color: var(--green); }
+  .diff-btn.sel-medium { background: var(--amber-bg);  color: var(--amber-text);  border-color: var(--amber); }
+  .diff-btn.sel-heavy  { background: var(--coral-bg);  color: var(--coral-text);  border-color: var(--coral); }
+  .diff-btn.sel-charged{ background: var(--pink-bg);   color: var(--pink-text);   border-color: var(--pink); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 0.5px solid var(--border); margin-top: 4px; }
+  .toggle-row span { font-size: 14px; color: var(--text2); }
+  .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .knob { position: absolute; inset: 0; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 22px; cursor: pointer; transition: 0.2s; }
+  .knob:before { content: ''; position: absolute; width: 15px; height: 15px; left: 3px; top: 3px; background: var(--text2); border-radius: 50%; transition: 0.2s; }
+  .toggle input:checked + .knob { background: var(--green); border-color: var(--green); }
+  .toggle input:checked + .knob:before { transform: translateX(16px); background: white; }
+  .cal-details { margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius-lg); border: 0.5px solid var(--border); }
+  .section-label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .submit-btn {
+    width: 100%; padding: 12px; font-size: 14px; font-weight: 500;
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); cursor: pointer;
+    margin-top: 1.25rem; transition: all 0.15s; font-family: inherit;
+  }
+  .submit-btn:hover { background: var(--surface2); border-color: rgba(255,255,255,0.22); }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn.loading { opacity: 0.5; pointer-events: none; }
+  .status { margin-top: 1rem; padding: 12px 14px; border-radius: var(--radius); font-size: 13px; line-height: 1.5; display: none; }
+  .status.success { background: var(--green-bg); color: var(--green-text); display: block; }
+  .status.error   { background: var(--red-bg);   color: var(--red-text);   display: block; }
+  .config-note { font-size: 12px; color: var(--text2); padding: 12px 14px; background: var(--surface2); border-radius: var(--radius); margin-bottom: 1rem; line-height: 1.6; border: 0.5px solid var(--border); }
+  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Relationship Sprints</h1>
+    <p>Add tasks and schedule time together</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('task')">Add task</button>
+    <button class="tab" onclick="switchTab('event')">Schedule event</button>
+    <button class="tab" onclick="switchTab('config')">Setup</button>
+  </div>
+
+  <!-- ADD TASK -->
+  <div id="panel-task" class="panel active">
+    <div class="field">
+      <label>Task title</label>
+      <input type="text" id="task-title" placeholder="e.g. Plan weekend getaway" />
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <textarea id="task-notes" placeholder="Any context or details..."></textarea>
+    </div>
+    <div class="field">
+      <label>Difficulty</label>
+      <div class="difficulty">
+        <button class="diff-btn" onclick="selectDiff(this,'Light','light')">Light</button>
+        <button class="diff-btn sel-medium" onclick="selectDiff(this,'Medium','medium')">Medium</button>
+        <button class="diff-btn" onclick="selectDiff(this,'Heavy','heavy')">Heavy</button>
+        <button class="diff-btn" onclick="selectDiff(this,'Charged','charged')">Charged</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Assigned to</label>
+      <select id="task-owner">
+        <option value="Both">Both of us</option>
+        <option value="p1" id="opt-p1">John</option>
+        <option value="p2" id="opt-p2">Partner</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Sprint</label>
+      <select id="task-sprint">
+        <option value="Backlog">Backlog</option>
+        <option value="Current">Current sprint</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Due date (optional)</label>
+      <input type="date" id="task-due" />
+    </div>
+    <div class="toggle-row">
+      <span>Create calendar reminder for due date</span>
+      <label class="toggle">
+        <input type="checkbox" id="task-cal-toggle" onchange="toggleDueCal(this)" />
+        <span class="knob"></span>
+      </label>
+    </div>
+    <div id="due-cal-details" style="display:none; margin-top:1rem;">
+      <div class="cal-details">
+        <div class="section-label">Calendar event details</div>
+        <div class="field">
+          <label>Event title</label>
+          <input type="text" id="due-event-title" placeholder="Reminder: task name" />
+        </div>
+        <div class="row2">
+          <div class="field"><label>Time</label><input type="time" id="due-event-time" value="18:00" /></div>
+          <div class="field"><label>Duration (min)</label><input type="number" id="due-event-duration" value="30" min="15" step="15" /></div>
+        </div>
+      </div>
+    </div>
+    <button class="submit-btn" id="task-btn" onclick="submitTask()">Save to backlog</button>
+    <div class="status" id="task-status"></div>
+  </div>
+
+  <!-- SCHEDULE EVENT -->
+  <div id="panel-event" class="panel">
+    <div class="field">
+      <label>Event type</label>
+      <select id="event-type" onchange="updateEventTitle()">
+        <option>Sprint Planning</option>
+        <option>Sprint Retro</option>
+        <option>Weekly Standup</option>
+        <option>Date Night</option>
+        <option value="Custom">Custom</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="event-title" value="Sprint Planning" />
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <textarea id="event-desc" placeholder="Agenda or notes..."></textarea>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="event-date" />
+    </div>
+    <div class="row2">
+      <div class="field"><label>Start time</label><input type="time" id="event-start" value="19:00" /></div>
+      <div class="field"><label>Duration (min)</label><input type="number" id="event-duration" value="60" min="15" step="15" /></div>
+    </div>
+    <button class="submit-btn" id="event-btn" onclick="submitEvent()">Create calendar event</button>
+    <div class="status" id="event-status"></div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="panel-config" class="panel">
+    <div class="config-note">
+      Paste your Apps Script web app URL below. After saving, test by adding a task and checking your Google Sheet.
+    </div>
+    <div class="field">
+      <label>Apps Script URL</label>
+      <input type="text" id="config-url" placeholder="https://script.google.com/macros/s/.../exec" />
+    </div>
+    <div class="divider"></div>
+    <div class="field">
+      <label>Your name</label>
+      <input type="text" id="config-name" placeholder="John" />
+    </div>
+    <div class="field">
+      <label>Partner's name</label>
+      <input type="text" id="config-partner" placeholder="e.g. Sarah" />
+    </div>
+    <button class="submit-btn" onclick="saveConfig()">Save settings</button>
+    <div class="status" id="config-status"></div>
+  </div>
+</div>
+
+<script>
+  const CALENDAR_ID = 'a7f5d1c7fc7fc689ef24f57b33689799c8fc29e99ccf797724bbb34d32457911@group.calendar.google.com';
+  let selectedDiff = 'Medium';
+
+  function switchTab(tab) {
+    const tabs = ['task','event','config'];
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  function selectDiff(btn, val, cls) {
+    selectedDiff = val;
+    document.querySelectorAll('.diff-btn').forEach(b => b.className = 'diff-btn');
+    btn.classList.add('sel-' + cls);
+  }
+
+  function toggleDueCal(cb) {
+    document.getElementById('due-cal-details').style.display = cb.checked ? 'block' : 'none';
+    const t = document.getElementById('task-title').value;
+    if (cb.checked && t) document.getElementById('due-event-title').value = 'Due: ' + t;
+  }
+
+  function updateEventTitle() {
+    const v = document.getElementById('event-type').value;
+    if (v !== 'Custom') document.getElementById('event-title').value = v;
+  }
+
+  function getConfig() {
+    return {
+      url: localStorage.getItem('rs_url') || '',
+      name: localStorage.getItem('rs_name') || 'John',
+      partner: localStorage.getItem('rs_partner') || 'Partner'
+    };
+  }
+
+  function saveConfig() {
+    const url = document.getElementById('config-url').value.trim();
+    const name = document.getElementById('config-name').value.trim();
+    const partner = document.getElementById('config-partner').value.trim();
+    localStorage.setItem('rs_url', url);
+    localStorage.setItem('rs_name', name);
+    localStorage.setItem('rs_partner', partner);
+    if (name) document.getElementById('opt-p1').text = name;
+    if (partner) document.getElementById('opt-p2').text = partner;
+    showStatus('config-status', 'success', 'Settings saved.');
+  }
+
+  function showStatus(id, type, msg) {
+    const el = document.getElementById(id);
+    el.className = 'status ' + type;
+    el.textContent = msg;
+    setTimeout(() => el.className = 'status', 5000);
+  }
+
+  async function post(payload) {
+    const cfg = getConfig();
+    if (!cfg.url) return false;
+    await fetch(cfg.url + '?ts=' + Date.now(), {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    return true;
+  }
+
+  async function submitTask() {
+    const title = document.getElementById('task-title').value.trim();
+    if (!title) { showStatus('task-status','error','Please enter a task title.'); return; }
+    const cfg = getConfig();
+    const due = document.getElementById('task-due').value;
+    const createCal = document.getElementById('task-cal-toggle').checked;
+    const btn = document.getElementById('task-btn');
+    btn.classList.add('loading'); btn.textContent = 'Saving...';
+
+    const payload = {
+      action: 'addTask', title,
+      notes: document.getElementById('task-notes').value.trim(),
+      difficulty: selectedDiff,
+      owner: document.getElementById('task-owner').value,
+      sprint: document.getElementById('task-sprint').value,
+      due: due || '',
+      createdBy: cfg.name,
+      timestamp: new Date().toISOString(),
+      createCalEvent: createCal,
+      calEventTitle: createCal ? document.getElementById('due-event-title').value : '',
+      calEventTime: createCal ? document.getElementById('due-event-time').value : '',
+      calEventDuration: createCal ? parseInt(document.getElementById('due-event-duration').value) : 0,
+      calendarId: CALENDAR_ID
+    };
+
+    if (!cfg.url) {
+      setTimeout(() => {
+        btn.classList.remove('loading'); btn.textContent = 'Save to backlog';
+        showStatus('task-status','success','Demo mode — add your Apps Script URL in Setup to save for real.');
+      }, 600);
+      return;
+    }
+
+    try {
+      await post(payload);
+      showStatus('task-status','success','Task saved. Check your Google Sheet to confirm.');
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-notes').value = '';
+      document.getElementById('task-due').value = '';
+      document.getElementById('task-cal-toggle').checked = false;
+      document.getElementById('due-cal-details').style.display = 'none';
+    } catch(e) {
+      showStatus('task-status','error','Request failed: ' + e.message);
+    }
+    btn.classList.remove('loading'); btn.textContent = 'Save to backlog';
+  }
+
+  async function submitEvent() {
+    const title = document.getElementById('event-title').value.trim();
+    const date = document.getElementById('event-date').value;
+    if (!title || !date) { showStatus('event-status','error','Please fill in title and date.'); return; }
+    const cfg = getConfig();
+    const btn = document.getElementById('event-btn');
+    btn.classList.add('loading'); btn.textContent = 'Creating...';
+
+    const payload = {
+      action: 'createEvent', title,
+      description: document.getElementById('event-desc').value.trim(),
+      date, startTime: document.getElementById('event-start').value,
+      duration: parseInt(document.getElementById('event-duration').value),
+      calendarId: CALENDAR_ID
+    };
+
+    if (!cfg.url) {
+      setTimeout(() => {
+        btn.classList.remove('loading'); btn.textContent = 'Create calendar event';
+        showStatus('event-status','success','Demo mode — add your Apps Script URL in Setup to save for real.');
+      }, 600);
+      return;
+    }
+
+    try {
+      await post(payload);
+      showStatus('event-status','success','Event created. Check your Relationship Sprints calendar.');
+    } catch(e) {
+      showStatus('event-status','error','Request failed: ' + e.message);
+    }
+    btn.classList.remove('loading'); btn.textContent = 'Create calendar event';
+  }
+
+  window.addEventListener('load', () => {
+    const cfg = getConfig();
+    document.getElementById('config-url').value = cfg.url;
+    document.getElementById('config-name').value = cfg.name;
+    document.getElementById('config-partner').value = cfg.partner;
+    document.getElementById('event-date').value = new Date().toISOString().split('T')[0];
+    if (cfg.name) document.getElementById('opt-p1').text = cfg.name;
+    if (cfg.partner) document.getElementById('opt-p2').text = cfg.partner;
+  });
+</script>
+</body>
+</html>
