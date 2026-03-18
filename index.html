@@ -1,385 +1,1077 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Relationship Sprints</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #242424;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0ede8;
-    --text2: #9a9690;
-    --text3: #5a5754;
-    --green: #1D9E75;
-    --green-bg: #0d3328;
-    --green-text: #5fcca4;
-    --amber: #BA7517;
-    --amber-bg: #2e1f06;
-    --amber-text: #e8a84a;
-    --coral: #D85A30;
-    --coral-bg: #2e1208;
-    --coral-text: #f0895e;
-    --pink: #D4537E;
-    --pink-bg: #2e0d1c;
-    --pink-text: #f07aa0;
-    --red-bg: #2e0a0a;
-    --red-text: #f07070;
-    --radius: 8px;
-    --radius-lg: 12px;
-  }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; min-height: 100vh; }
-  .app { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
-  .header { padding: 1.5rem 0 1.25rem; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; }
-  .header h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
-  .header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
-  .tab { flex: 1; padding: 8px 6px; font-size: 13px; font-weight: 500; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit; }
-  .tab.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
-  .tab:hover:not(.active) { border-color: var(--border2); color: var(--text); }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .field { margin-bottom: 1rem; }
-  .field label { display: block; font-size: 11px; font-weight: 500; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .field input, .field textarea, .field select {
-    width: 100%; padding: 10px 12px; font-size: 14px;
-    border: 0.5px solid var(--border); border-radius: var(--radius);
-    background: var(--surface); color: var(--text); font-family: inherit;
-    transition: border-color 0.15s; outline: none;
-  }
-  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--border2); }
-  .field textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
-  .field select option { background: #1a1a1a; }
-  .row2 { display: flex; gap: 8px; }
-  .row2 > div { flex: 1; }
-  .difficulty { display: flex; gap: 6px; }
-  .diff-btn {
-    flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500;
-    border: 0.5px solid var(--border); border-radius: var(--radius);
-    background: transparent; color: var(--text2); cursor: pointer;
-    transition: all 0.15s; font-family: inherit;
-  }
-  .diff-btn:hover { border-color: var(--border2); color: var(--text); }
-  .diff-btn.sel-light  { background: var(--green-bg);  color: var(--green-text);  border-color: var(--green); }
-  .diff-btn.sel-medium { background: var(--amber-bg);  color: var(--amber-text);  border-color: var(--amber); }
-  .diff-btn.sel-heavy  { background: var(--coral-bg);  color: var(--coral-text);  border-color: var(--coral); }
-  .diff-btn.sel-charged{ background: var(--pink-bg);   color: var(--pink-text);   border-color: var(--pink); }
-  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 0.5px solid var(--border); margin-top: 4px; }
-  .toggle-row span { font-size: 14px; color: var(--text2); }
-  .toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .knob { position: absolute; inset: 0; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 22px; cursor: pointer; transition: 0.2s; }
-  .knob:before { content: ''; position: absolute; width: 15px; height: 15px; left: 3px; top: 3px; background: var(--text2); border-radius: 50%; transition: 0.2s; }
-  .toggle input:checked + .knob { background: var(--green); border-color: var(--green); }
-  .toggle input:checked + .knob:before { transform: translateX(16px); background: white; }
-  .cal-details { margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius-lg); border: 0.5px solid var(--border); }
-  .section-label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
-  .submit-btn {
-    width: 100%; padding: 12px; font-size: 14px; font-weight: 500;
-    border: 0.5px solid var(--border2); border-radius: var(--radius);
-    background: var(--surface); color: var(--text); cursor: pointer;
-    margin-top: 1.25rem; transition: all 0.15s; font-family: inherit;
-  }
-  .submit-btn:hover { background: var(--surface2); border-color: rgba(255,255,255,0.22); }
-  .submit-btn:active { transform: scale(0.99); }
-  .submit-btn.loading { opacity: 0.5; pointer-events: none; }
-  .status { margin-top: 1rem; padding: 12px 14px; border-radius: var(--radius); font-size: 13px; line-height: 1.5; display: none; }
-  .status.success { background: var(--green-bg); color: var(--green-text); display: block; }
-  .status.error   { background: var(--red-bg);   color: var(--red-text);   display: block; }
-  .config-note { font-size: 12px; color: var(--text2); padding: 12px 14px; background: var(--surface2); border-radius: var(--radius); margin-bottom: 1rem; line-height: 1.6; border: 0.5px solid var(--border); }
-  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0c0c0e;--surface:#161618;--surface2:#1e1e21;--surface3:#26262a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--border3:rgba(255,255,255,0.18);
+  --text:#f2efe9;--text2:#7e7b76;--text3:#3e3c3a;
+  --accent:#2bb87a;--accent-dim:#0f2e1e;--accent-text:#5ddba4;
+  --amber:#c47f1a;--amber-dim:#2e1f06;--amber-text:#e8a84a;
+  --coral:#d9603a;--coral-dim:#2e1208;--coral-text:#f0895e;
+  --pink:#cc4d7a;--pink-dim:#2e0d1c;--pink-text:#f070a0;
+  --blue:#3d8fd4;--blue-dim:#0a1e35;--blue-text:#70b8f0;
+  --red-dim:#2a0a0a;--red-text:#f07070;
+  --nav-h:64px;--r:10px;--r-lg:16px;--r-xl:20px;
+}
+html{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;font-size:15px;min-height:100%;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(12,12,14,0.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:0.5px solid var(--border2);display:flex;z-index:200;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:color 0.15s;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent;}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.nav-btn span{font-size:10px;font-weight:500;letter-spacing:0.03em;}
+.nav-btn.active{color:var(--accent);}
+.nav-center{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;}
+.nav-center .fab{width:48px;height:48px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(43,184,122,0.35);}
+.nav-center .fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.nav-center span{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:0.03em;}
+
+/* PAGES */
+.page{display:none;max-width:540px;margin:0 auto;padding:0 0 1rem;}
+.page.active{display:block;}
+.page-header{padding:1.5rem 1.25rem 0.75rem;}
+.page-header h2{font-size:22px;font-weight:600;letter-spacing:-0.03em;}
+.page-header p{font-size:14px;color:var(--text2);margin-top:5px;line-height:1.5;}
+.pad{padding:0 1.25rem;}
+
+/* HOME HERO */
+.home-hero{margin:1.25rem;padding:1.5rem;background:linear-gradient(135deg,#0f2a1e 0%,#0d1f2d 100%);border:0.5px solid rgba(43,184,122,0.2);border-radius:var(--r-xl);position:relative;overflow:hidden;}
+.home-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;background:radial-gradient(circle,rgba(43,184,122,0.12) 0%,transparent 70%);border-radius:50%;}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+.hero-greeting{font-size:12px;font-weight:600;color:var(--accent-text);letter-spacing:0.06em;text-transform:uppercase;}
+.user-switch{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.user-switch span{font-size:11px;font-weight:600;color:var(--text2);}
+.user-switch svg{width:12px;height:12px;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.hero-name{font-size:26px;font-weight:700;letter-spacing:-0.03em;line-height:1.15;margin-bottom:4px;}
+.hero-date{font-size:13px;color:var(--text2);}
+
+/* SPRINT COUNTDOWN */
+.sprint-countdown{margin-top:1rem;padding-top:1rem;border-top:0.5px solid rgba(255,255,255,0.08);}
+.countdown-label{font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;}
+.countdown-label span{font-weight:600;color:var(--accent-text);}
+.countdown-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+.countdown-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 0.4s;}
+
+/* HERO STATS */
+.hero-stats{display:flex;gap:12px;margin-top:1rem;padding-top:1rem;border-top:0.5px solid rgba(255,255,255,0.08);}
+.hero-stat{flex:1;text-align:center;}
+.hero-stat .num{font-size:22px;font-weight:700;color:var(--accent-text);}
+.hero-stat .lbl{font-size:11px;color:var(--text2);margin-top:2px;}
+
+/* SECTION TITLE */
+.section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:1.25rem 1.25rem 0.6rem;}
+
+/* HOME TASK */
+.home-task{display:flex;align-items:flex-start;gap:12px;margin:0 1.25rem 8px;padding:1rem 1.1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);-webkit-tap-highlight-color:transparent;}
+.home-task.done-visual{opacity:0.4;}
+.home-task.done-visual .ht-title{text-decoration:line-through;color:var(--text2);}
+.ht-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border3);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;margin-top:1px;}
+.ht-check.checked{background:var(--accent);border-color:var(--accent);}
+.ht-check svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;display:none;}
+.ht-check.checked svg{display:block;}
+.ht-body{flex:1;}
+.ht-title{font-size:15px;font-weight:500;line-height:1.3;margin-bottom:5px;}
+.ht-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.ht-effort{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;}
+.ht-effort.easy{background:var(--accent-dim);color:var(--accent-text);}
+.ht-effort.medium{background:var(--amber-dim);color:var(--amber-text);}
+.ht-effort.hard{background:var(--coral-dim);color:var(--coral-text);}
+.ht-due{font-size:11px;color:var(--text2);}
+
+/* SUGGESTION CHIP */
+.suggestion-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--blue-dim);border:0.5px solid var(--blue);border-radius:20px;font-size:11px;color:var(--blue-text);margin:0 1.25rem 8px;}
+.suggestion-chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* ACTION CARDS */
+.action-card{margin:0 1.25rem 0.75rem;padding:1.1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:1rem;}
+.action-card:active{transform:scale(0.98);background:var(--surface2);}
+.icon-wrap{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;}
+.icon-wrap.green{background:var(--accent-dim);}
+.icon-wrap.amber{background:var(--amber-dim);}
+.icon-wrap.blue{background:var(--blue-dim);}
+.icon-wrap.pink{background:var(--pink-dim);}
+.ac-text{flex:1;}
+.ac-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;}
+.ac-title{font-size:15px;font-weight:600;letter-spacing:-0.01em;}
+.ac-sub{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.4;}
+.ac-chev svg{width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* CARD */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin:0 1.25rem 1rem;}
+.card-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;}
+
+/* FORM */
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
+.field input,.field textarea,.field select{width:100%;padding:11px 13px;font-size:15px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text);font-family:inherit;outline:none;transition:border-color 0.15s;-webkit-appearance:none;appearance:none;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:80px;line-height:1.55;}
+.field select option{background:#1a1a1c;}
+.row2{display:flex;gap:10px;}
+.row2>.field{flex:1;}
+
+/* EFFORT SELECTOR */
+.effort-row{display:flex;gap:6px;margin-bottom:1rem;}
+.effort-btn{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:0.5px solid var(--border2);border-radius:var(--r);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+.effort-btn.sel-easy{background:var(--accent-dim);color:var(--accent-text);border-color:var(--accent);}
+.effort-btn.sel-medium{background:var(--amber-dim);color:var(--amber-text);border-color:var(--amber);}
+.effort-btn.sel-hard{background:var(--coral-dim);color:var(--coral-text);border-color:var(--coral);}
+.effort-section{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:1rem;}
+.effort-section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;}
+.effort-person{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.effort-person:last-child{margin-bottom:0;}
+.effort-person-name{font-size:13px;color:var(--text2);font-weight:500;min-width:60px;}
+.effort-person-btns{display:flex;gap:5px;}
+.ep-btn{padding:5px 10px;font-size:11px;font-weight:600;border:0.5px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:all 0.12s;}
+.ep-btn.sel-easy{background:var(--accent-dim);color:var(--accent-text);border-color:var(--accent);}
+.ep-btn.sel-medium{background:var(--amber-dim);color:var(--amber-text);border-color:var(--amber);}
+.ep-btn.sel-hard{background:var(--coral-dim);color:var(--coral-text);border-color:var(--coral);}
+
+/* DIFF BUTTONS */
+.diff-row{display:flex;gap:6px;}
+.diff-btn{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:0.5px solid var(--border2);border-radius:var(--r);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+.diff-btn.sel-light{background:var(--accent-dim);color:var(--accent-text);border-color:var(--accent);}
+.diff-btn.sel-medium{background:var(--amber-dim);color:var(--amber-text);border-color:var(--amber);}
+.diff-btn.sel-heavy{background:var(--coral-dim);color:var(--coral-text);border-color:var(--coral);}
+.diff-btn.sel-charged{background:var(--pink-dim);color:var(--pink-text);border-color:var(--pink);}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:0.5px solid var(--border);}
+.toggle-row span{font-size:14px;color:var(--text2);}
+.toggle{position:relative;width:44px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.knob{position:absolute;inset:0;background:var(--surface3);border:0.5px solid var(--border2);border-radius:26px;cursor:pointer;transition:0.22s;}
+.knob:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--text2);border-radius:50%;transition:0.22s;}
+.toggle input:checked+.knob{background:var(--accent);border-color:var(--accent);}
+.toggle input:checked+.knob:before{transform:translateX(18px);background:#fff;}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;font-size:15px;font-weight:600;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text);cursor:pointer;transition:all 0.15s;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+.btn:active{transform:scale(0.98);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:active{background:#24a06b;}
+.btn.ghost{background:transparent;border-color:var(--border2);color:var(--text2);}
+.btn.sm{padding:8px 12px;font-size:13px;}
+.btn.loading{opacity:0.45;pointer-events:none;}
+.btn-row{display:flex;gap:8px;margin-top:1rem;}
+.btn-row .btn{margin-top:0;}
+
+/* STATUS */
+.status{margin-top:1rem;padding:13px 15px;border-radius:var(--r);font-size:14px;line-height:1.5;display:none;}
+.status.success{background:var(--accent-dim);color:var(--accent-text);display:block;}
+.status.error{background:var(--red-dim);color:var(--red-text);display:block;}
+.status.info{background:var(--blue-dim);color:var(--blue-text);display:block;}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.light{background:var(--accent-dim);color:var(--accent-text);}
+.badge.medium,.badge.Medium{background:var(--amber-dim);color:var(--amber-text);}
+.badge.heavy{background:var(--coral-dim);color:var(--coral-text);}
+.badge.charged{background:var(--pink-dim);color:var(--pink-text);}
+.badge.backlog{background:var(--surface3);color:var(--text2);}
+.badge.current{background:var(--blue-dim);color:var(--blue-text);}
+.badge.done{background:var(--accent-dim);color:var(--accent-text);}
+
+/* WIZARD */
+.wizard{display:none;}
+.wizard.active{display:block;}
+.wizard-header{padding:1.25rem 1.25rem 0;}
+.wiz-back{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;margin-bottom:1rem;-webkit-tap-highlight-color:transparent;}
+.wiz-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.wiz-type{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;}
+.wizard-progress{display:flex;gap:5px;margin:0 1.25rem 1.75rem;}
+.wizard-progress .step{flex:1;height:3px;background:var(--surface3);border-radius:3px;transition:background 0.3s;}
+.wizard-progress .step.done{background:var(--accent);}
+.wizard-progress .step.active{background:var(--text2);}
+.wizard-step{display:none;padding:0 1.25rem;}
+.wizard-step.active{display:block;}
+.wiz-q{font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-0.02em;margin-bottom:8px;}
+.wiz-hint{font-size:14px;color:var(--text2);margin-bottom:1.5rem;line-height:1.55;}
+.choice-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;}
+.choice-btn{padding:13px 15px;text-align:left;font-size:15px;font-family:inherit;border:0.5px solid var(--border2);border-radius:var(--r-lg);background:var(--surface2);color:var(--text);cursor:pointer;transition:all 0.15s;line-height:1.4;-webkit-tap-highlight-color:transparent;}
+.choice-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent-text);}
+.rating-row{display:flex;gap:8px;margin-bottom:1.25rem;}
+.rating-btn{flex:1;padding:14px 4px;font-size:18px;font-weight:700;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:inherit;text-align:center;-webkit-tap-highlight-color:transparent;}
+.rating-btn.sel{border-color:var(--accent);background:var(--accent-dim);color:var(--accent-text);}
+.sum-item{margin-bottom:14px;}
+.sum-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.sum-val{font-size:14px;color:var(--text);line-height:1.5;}
+
+/* BACKLOG PICKER */
+.backlog-pick-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r-lg);margin-bottom:8px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.backlog-pick-item.selected{border-color:var(--accent);background:var(--accent-dim);}
+.bp-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border3);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all 0.15s;}
+.backlog-pick-item.selected .bp-check{background:var(--accent);border-color:var(--accent);}
+.bp-check svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;display:none;}
+.backlog-pick-item.selected .bp-check svg{display:block;}
+.bp-body{flex:1;}
+.bp-title{font-size:14px;font-weight:500;margin-bottom:5px;line-height:1.3;}
+.bp-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.bp-effort{display:flex;gap:4px;align-items:center;margin-top:5px;}
+.bp-effort-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-right:2px;}
+.bp-effort-pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;}
+.bp-effort-pill.easy{background:var(--accent-dim);color:var(--accent-text);}
+.bp-effort-pill.medium{background:var(--amber-dim);color:var(--amber-text);}
+.bp-effort-pill.hard{background:var(--coral-dim);color:var(--coral-text);}
+.suggest-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--blue-dim);color:var(--blue-text);}
+
+/* RETRO TASK REVIEW */
+.retro-task-card{background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r-lg);padding:1rem 1.1rem;margin-bottom:10px;}
+.retro-task-card.completed{border-color:rgba(43,184,122,0.3);}
+.retro-task-card.incomplete{border-color:rgba(217,96,58,0.3);}
+.rtc-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.rtc-status{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.rtc-status.done{background:var(--accent);}
+.rtc-status.open{background:var(--coral);}
+.rtc-title{font-size:14px;font-weight:500;flex:1;line-height:1.3;}
+.rtc-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.rtc-actions{display:flex;gap:6px;margin-top:8px;}
+
+/* FILTERS */
+.filters{display:flex;gap:6px;padding:0 1.25rem;margin-bottom:1rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.filters::-webkit-scrollbar{display:none;}
+.filter-btn{white-space:nowrap;padding:7px 14px;font-size:13px;font-weight:500;border:0.5px solid var(--border2);border-radius:20px;background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;transition:all 0.15s;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.filter-btn.active{background:var(--surface2);color:var(--text);border-color:var(--border3);}
+
+/* BACKLOG LIST */
+.task-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1rem 1.1rem;margin:0 1.25rem 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.task-card:active{background:var(--surface2);}
+.task-title{font-size:15px;font-weight:500;line-height:1.3;margin-bottom:6px;}
+.task-notes-txt{font-size:13px;color:var(--text2);margin:5px 0 8px;line-height:1.45;}
+.task-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.task-due{font-size:12px;color:var(--text2);}
+.task-expand{display:none;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border);}
+.task-expand.open{display:block;}
+.effort-display{display:flex;gap:8px;margin-bottom:10px;align-items:center;}
+.effort-display-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;}
+.effort-pair{display:flex;gap:5px;align-items:center;}
+.effort-name{font-size:11px;color:var(--text2);}
+.empty-state{text-align:center;padding:4rem 1rem;color:var(--text2);}
+.empty-state .ei{font-size:36px;margin-bottom:14px;opacity:0.3;}
+.empty-state p{font-size:14px;line-height:1.6;}
+.loading-msg{text-align:center;padding:2.5rem;color:var(--text3);font-size:14px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-sheet{background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));border-top:0.5px solid var(--border2);}
+.modal-handle{width:36px;height:4px;background:var(--border3);border-radius:4px;margin:0 auto 1.25rem;}
+.modal-title{font-size:17px;font-weight:600;letter-spacing:-0.02em;margin-bottom:1.25rem;}
+
+/* LOAD BALANCE BAR */
+.load-balance{background:var(--surface2);border-radius:var(--r);padding:12px 14px;margin-bottom:1rem;}
+.lb-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.lb-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.lb-row:last-child{margin-bottom:0;}
+.lb-name{font-size:12px;color:var(--text2);width:56px;flex-shrink:0;}
+.lb-bar-wrap{flex:1;height:6px;background:var(--surface3);border-radius:6px;overflow:hidden;}
+.lb-bar{height:100%;border-radius:6px;transition:width 0.4s;}
+.lb-bar.p1{background:var(--accent);}
+.lb-bar.p2{background:var(--amber);}
+.lb-count{font-size:11px;color:var(--text2);width:24px;text-align:right;}
+
+.divider{height:0.5px;background:var(--border);margin:1.1rem 0;}
+.config-note{font-size:13px;color:var(--text2);padding:13px 15px;background:var(--surface2);border-radius:var(--r);margin-bottom:1rem;line-height:1.6;border:0.5px solid var(--border);}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <h1>Relationship Sprints</h1>
-    <p>Add tasks and schedule time together</p>
-  </div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('task')">Add task</button>
-    <button class="tab" onclick="switchTab('event')">Schedule event</button>
-    <button class="tab" onclick="switchTab('config')">Setup</button>
-  </div>
+<nav class="nav">
+  <button class="nav-btn active" id="nav-home" onclick="homeIconTap()">
+    <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('backlog')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="3" rx="1"/><rect x="3" y="11" width="18" height="3" rx="1"/><rect x="3" y="17" width="12" height="3" rx="1"/></svg>
+    <span>Backlog</span>
+  </button>
+  <button class="nav-center" onclick="openAddModal()">
+    <div class="fab"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    <span>Add</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('sprint')">
+    <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <span>Sprint</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('retro')">
+    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Retro</span>
+  </button>
+</nav>
 
-  <!-- ADD TASK -->
-  <div id="panel-task" class="panel active">
-    <div class="field">
-      <label>Task title</label>
-      <input type="text" id="task-title" placeholder="e.g. Plan weekend getaway" />
-    </div>
-    <div class="field">
-      <label>Notes (optional)</label>
-      <textarea id="task-notes" placeholder="Any context or details..."></textarea>
-    </div>
-    <div class="field">
-      <label>Difficulty</label>
-      <div class="difficulty">
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="add-modal" onclick="closeAddModalOutside(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add task to backlog</div>
+    <div class="field"><label>Task title</label><input type="text" id="m-title" placeholder="e.g. Make dentist appointments"/></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="m-notes" placeholder="Any context or details..."></textarea></div>
+    <div class="field"><label>Overall difficulty</label>
+      <div class="diff-row">
         <button class="diff-btn" onclick="selectDiff(this,'Light','light')">Light</button>
         <button class="diff-btn sel-medium" onclick="selectDiff(this,'Medium','medium')">Medium</button>
         <button class="diff-btn" onclick="selectDiff(this,'Heavy','heavy')">Heavy</button>
         <button class="diff-btn" onclick="selectDiff(this,'Charged','charged')">Charged</button>
       </div>
     </div>
-    <div class="field">
-      <label>Assigned to</label>
-      <select id="task-owner">
-        <option value="Both">Both of us</option>
-        <option value="p1" id="opt-p1">John</option>
-        <option value="p2" id="opt-p2">Partner</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Sprint</label>
-      <select id="task-sprint">
-        <option value="Backlog">Backlog</option>
-        <option value="Current">Current sprint</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Due date (optional)</label>
-      <input type="date" id="task-due" />
-    </div>
-    <div class="toggle-row">
-      <span>Create calendar reminder for due date</span>
-      <label class="toggle">
-        <input type="checkbox" id="task-cal-toggle" onchange="toggleDueCal(this)" />
-        <span class="knob"></span>
-      </label>
-    </div>
-    <div id="due-cal-details" style="display:none; margin-top:1rem;">
-      <div class="cal-details">
-        <div class="section-label">Calendar event details</div>
-        <div class="field">
-          <label>Event title</label>
-          <input type="text" id="due-event-title" placeholder="Reminder: task name" />
+    <div class="effort-section">
+      <div class="effort-section-label">Personal effort — how hard is this for each of you?</div>
+      <div class="effort-person">
+        <span class="effort-person-name" id="effort-p1-name">John</span>
+        <div class="effort-person-btns" id="effort-p1-btns">
+          <button class="ep-btn" onclick="setPersonEffort('p1','Easy',this)">Easy</button>
+          <button class="ep-btn sel-medium" onclick="setPersonEffort('p1','Medium',this)">Medium</button>
+          <button class="ep-btn" onclick="setPersonEffort('p1','Hard',this)">Hard</button>
         </div>
-        <div class="row2">
-          <div class="field"><label>Time</label><input type="time" id="due-event-time" value="18:00" /></div>
-          <div class="field"><label>Duration (min)</label><input type="number" id="due-event-duration" value="30" min="15" step="15" /></div>
+      </div>
+      <div class="effort-person">
+        <span class="effort-person-name" id="effort-p2-name">Partner</span>
+        <div class="effort-person-btns" id="effort-p2-btns">
+          <button class="ep-btn" onclick="setPersonEffort('p2','Easy',this)">Easy</button>
+          <button class="ep-btn sel-medium" onclick="setPersonEffort('p2','Medium',this)">Medium</button>
+          <button class="ep-btn" onclick="setPersonEffort('p2','Hard',this)">Hard</button>
         </div>
       </div>
     </div>
-    <button class="submit-btn" id="task-btn" onclick="submitTask()">Save to backlog</button>
-    <div class="status" id="task-status"></div>
-  </div>
-
-  <!-- SCHEDULE EVENT -->
-  <div id="panel-event" class="panel">
-    <div class="field">
-      <label>Event type</label>
-      <select id="event-type" onchange="updateEventTitle()">
-        <option>Sprint Planning</option>
-        <option>Sprint Retro</option>
-        <option>Weekly Standup</option>
-        <option>Date Night</option>
-        <option value="Custom">Custom</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Title</label>
-      <input type="text" id="event-title" value="Sprint Planning" />
-    </div>
-    <div class="field">
-      <label>Description (optional)</label>
-      <textarea id="event-desc" placeholder="Agenda or notes..."></textarea>
-    </div>
-    <div class="field">
-      <label>Date</label>
-      <input type="date" id="event-date" />
-    </div>
     <div class="row2">
-      <div class="field"><label>Start time</label><input type="time" id="event-start" value="19:00" /></div>
-      <div class="field"><label>Duration (min)</label><input type="number" id="event-duration" value="60" min="15" step="15" /></div>
+      <div class="field"><label>Assigned to</label>
+        <select id="m-owner"><option value="Both">Both</option><option value="p1" id="opt-p1">John</option><option value="p2" id="opt-p2">Partner</option></select>
+      </div>
+      <div class="field"><label>Sprint</label>
+        <select id="m-sprint"><option value="Backlog">Backlog</option><option value="Current">Current sprint</option></select>
+      </div>
     </div>
-    <button class="submit-btn" id="event-btn" onclick="submitEvent()">Create calendar event</button>
-    <div class="status" id="event-status"></div>
+    <div class="field"><label>Due date (optional)</label><input type="date" id="m-due"/></div>
+    <div class="toggle-row">
+      <span>Create calendar reminder</span>
+      <label class="toggle"><input type="checkbox" id="m-cal-toggle" onchange="toggleModalCal(this)"/><span class="knob"></span></label>
+    </div>
+    <div id="m-cal-details" style="display:none;margin-top:1rem;padding:1rem;background:var(--surface2);border-radius:var(--r);border:0.5px solid var(--border);">
+      <div class="card-label">Calendar event</div>
+      <div class="field"><label>Title</label><input type="text" id="m-cal-title"/></div>
+      <div class="row2">
+        <div class="field"><label>Time</label><input type="time" id="m-cal-time" value="18:00"/></div>
+        <div class="field"><label>Duration (min)</label><input type="number" id="m-cal-dur" value="30" min="15" step="15"/></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:1.25rem;">
+      <button class="btn ghost" onclick="closeAddModal()">Cancel</button>
+      <button class="btn primary" id="m-save-btn" onclick="submitModalTask()">Save task</button>
+    </div>
+    <div class="status" id="m-status"></div>
   </div>
+</div>
 
-  <!-- SETUP -->
-  <div id="panel-config" class="panel">
-    <div class="config-note">
-      Paste your Apps Script web app URL below. After saving, test by adding a task and checking your Google Sheet.
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="home-hero">
+    <div class="hero-top">
+      <div class="hero-greeting">Your sprint</div>
+      <div class="user-switch" onclick="switchUser()">
+        <span id="user-switch-label">John</span>
+        <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/></svg>
+      </div>
     </div>
-    <div class="field">
-      <label>Apps Script URL</label>
-      <input type="text" id="config-url" placeholder="https://script.google.com/macros/s/.../exec" />
+    <div class="hero-name" id="home-greeting">Hey John</div>
+    <div class="hero-date" id="home-date"></div>
+    <div id="sprint-countdown" class="sprint-countdown" style="display:none;">
+      <div class="countdown-label">Sprint ends <span id="countdown-text"></span></div>
+      <div class="countdown-bar"><div class="countdown-fill" id="countdown-fill" style="width:0%"></div></div>
     </div>
-    <div class="divider"></div>
-    <div class="field">
-      <label>Your name</label>
-      <input type="text" id="config-name" placeholder="John" />
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num" id="stat-total">0</div><div class="lbl">assigned</div></div>
+      <div class="hero-stat"><div class="num" id="stat-done">0</div><div class="lbl">done</div></div>
+      <div class="hero-stat"><div class="num" id="stat-left">0</div><div class="lbl">remaining</div></div>
     </div>
-    <div class="field">
-      <label>Partner's name</label>
-      <input type="text" id="config-partner" placeholder="e.g. Sarah" />
+  </div>
+  <div class="section-title">Your tasks this sprint</div>
+  <div id="home-tasks-list"><div class="loading-msg">Loading your tasks...</div></div>
+  <div class="section-title" style="margin-top:0.5rem;">Quick actions</div>
+  <div class="action-card" onclick="showPage('sprint');startWizard('standup');">
+    <div class="icon-wrap amber">🌙</div>
+    <div class="ac-text"><div class="ac-label">Daily check-in</div><div class="ac-title">Evening standup</div><div class="ac-sub">5-8 min to connect and name what's hard</div></div>
+    <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="action-card" onclick="showPage('sprint');startWizard('planning');">
+    <div class="icon-wrap blue">⚡</div>
+    <div class="ac-text"><div class="ac-label">Sprint planning</div><div class="ac-title">Plan your sprint</div><div class="ac-sub">Pick items from backlog and commit together</div></div>
+    <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="action-card" onclick="showPage('retro');startWizard('retro');">
+    <div class="icon-wrap pink">💬</div>
+    <div class="ac-text"><div class="ac-label">Retrospective</div><div class="ac-title">Run a retro</div><div class="ac-sub">Reflect on what worked and what didn't</div></div>
+    <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+</div>
+
+<!-- BACKLOG -->
+<div id="page-backlog" class="page">
+  <div class="page-header"><h2>Backlog</h2><p>All your tasks in one place</p></div>
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterBacklog('all',this)">All open</button>
+    <button class="filter-btn" onclick="filterBacklog('Backlog',this)">Backlog</button>
+    <button class="filter-btn" onclick="filterBacklog('Current',this)">Current sprint</button>
+    <button class="filter-btn" onclick="filterBacklog('Done',this)">Done</button>
+  </div>
+  <div id="backlog-list"><div class="loading-msg">Loading tasks...</div></div>
+</div>
+
+<!-- SPRINT -->
+<div id="page-sprint" class="page">
+  <div id="sprint-home">
+    <div class="page-header"><h2>Sprint</h2><p>Plan and run your current sprint</p></div>
+    <div class="action-card" onclick="startWizard('planning')">
+      <div class="icon-wrap blue">⚡</div>
+      <div class="ac-text"><div class="ac-label">Guided wizard</div><div class="ac-title">Sprint planning</div><div class="ac-sub">Pick backlog items and commit together</div></div>
+      <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <button class="submit-btn" onclick="saveConfig()">Save settings</button>
-    <div class="status" id="config-status"></div>
+    <div class="action-card" onclick="startWizard('standup')">
+      <div class="icon-wrap amber">🌙</div>
+      <div class="ac-text"><div class="ac-label">Daily check-in</div><div class="ac-title">Evening standup</div><div class="ac-sub">5-8 min to connect and name what's hard</div></div>
+      <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="action-card" onclick="showScheduleEvent()">
+      <div class="icon-wrap green">📅</div>
+      <div class="ac-text"><div class="ac-label">Calendar</div><div class="ac-title">Schedule an event</div><div class="ac-sub">Create a planning, retro, or date night event</div></div>
+      <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+  <div id="schedule-event-section" style="display:none;">
+    <div class="page-header">
+      <button class="wiz-back" onclick="hideScheduleEvent()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+      <h2>Schedule event</h2>
+    </div>
+    <div class="card">
+      <div class="field"><label>Event type</label>
+        <select id="event-type" onchange="updateEventTitle()">
+          <option>Sprint Planning</option><option>Sprint Retro</option><option>Weekly Standup</option><option>Date Night</option><option value="Custom">Custom</option>
+        </select>
+      </div>
+      <div class="field"><label>Title</label><input type="text" id="event-title" value="Sprint Planning"/></div>
+      <div class="field"><label>Description (optional)</label><textarea id="event-desc" placeholder="Agenda or notes..."></textarea></div>
+      <div class="field"><label>Date</label><input type="date" id="event-date"/></div>
+      <div class="row2">
+        <div class="field"><label>Start time</label><input type="time" id="event-start" value="19:00"/></div>
+        <div class="field"><label>Duration (min)</label><input type="number" id="event-duration" value="60" min="15" step="15"/></div>
+      </div>
+      <button class="btn primary" id="event-btn" onclick="submitEvent()">Create calendar event</button>
+      <div class="status" id="event-status"></div>
+    </div>
+  </div>
+  <div id="wizard-planning" class="wizard">
+    <div class="wizard-header"><button class="wiz-back" onclick="exitWizard('planning')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button><div class="wiz-type">Sprint planning</div></div>
+    <div class="wizard-progress" id="planning-progress"></div>
+    <div id="planning-steps"></div>
+    <div class="pad"><div class="status" id="planning-status"></div></div>
+  </div>
+  <div id="wizard-standup" class="wizard">
+    <div class="wizard-header"><button class="wiz-back" onclick="exitWizard('standup')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button><div class="wiz-type">Evening standup</div></div>
+    <div class="wizard-progress" id="standup-progress"></div>
+    <div id="standup-steps"></div>
+    <div class="pad"><div class="status" id="standup-status"></div></div>
+  </div>
+</div>
+
+<!-- RETRO -->
+<div id="page-retro" class="page">
+  <div id="retro-home">
+    <div class="page-header"><h2>Retrospective</h2><p>Reflect on your last sprint together</p></div>
+    <div class="action-card" onclick="startWizard('retro')">
+      <div class="icon-wrap pink">💬</div>
+      <div class="ac-text"><div class="ac-label">Guided wizard</div><div class="ac-title">Run a retro</div><div class="ac-sub">Review tasks, reflect, plan ahead</div></div>
+      <div class="ac-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+  <div id="wizard-retro" class="wizard">
+    <div class="wizard-header"><button class="wiz-back" onclick="exitWizard('retro')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button><div class="wiz-type">Retrospective</div></div>
+    <div class="wizard-progress" id="retro-progress"></div>
+    <div id="retro-steps"></div>
+    <div class="pad"><div class="status" id="retro-status"></div></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="page-setup" class="page">
+  <div class="page-header"><h2>Setup</h2><p>Connect your Google Sheet and configure names</p></div>
+  <div class="pad">
+    <div class="config-note">Paste your Apps Script URL to connect the app to your Google Sheet and Relationship Sprints calendar.</div>
+    <div class="card" style="margin:0 0 1rem;">
+      <div class="field"><label>Apps Script URL</label><input type="text" id="config-url" placeholder="https://script.google.com/macros/s/.../exec"/></div>
+      <div class="divider"></div>
+      <div class="field"><label>Your name (Person 1)</label><input type="text" id="config-name" placeholder="John"/></div>
+      <div class="field"><label>Partner's name (Person 2)</label><input type="text" id="config-partner" placeholder="e.g. Sarah"/></div>
+      <div class="divider"></div>
+      <div class="field"><label>Sprint length</label>
+        <select id="config-sprint-length"><option value="7">Weekly (7 days)</option><option value="14" selected>Bi-weekly (14 days)</option></select>
+      </div>
+      <button class="btn primary" onclick="saveConfig()">Save settings</button>
+      <div class="status" id="config-status"></div>
+    </div>
+    <p style="font-size:12px;color:var(--text3);text-align:center;">Tap the Home icon 5 times to return here anytime.</p>
   </div>
 </div>
 
 <script>
-  const CALENDAR_ID = 'a7f5d1c7fc7fc689ef24f57b33689799c8fc29e99ccf797724bbb34d32457911@group.calendar.google.com';
-  let selectedDiff = 'Medium';
+const CALENDAR_ID='a7f5d1c7fc7fc689ef24f57b33689799c8fc29e99ccf797724bbb34d32457911@group.calendar.google.com';
+let selectedDiff='Medium';
+let effortP1='Medium', effortP2='Medium';
+let backlogFilter='all', backlogData=[], expandedTask=null, wizardState={};
+let homeTasksLocal=[], homeTapCount=0, homeTapTimer=null;
+let currentUser='p1'; // 'p1' or 'p2'
 
-  function switchTab(tab) {
-    const tabs = ['task','event','config'];
-    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panel-' + tab).classList.add('active');
-  }
+// ── CONFIG ──────────────────────────────────────────────────
+function getConfig(){
+  return{
+    url:localStorage.getItem('rs_url')||'',
+    name:localStorage.getItem('rs_name')||'John',
+    partner:localStorage.getItem('rs_partner')||'Partner',
+    sprintLength:parseInt(localStorage.getItem('rs_sprint_length')||'14'),
+    sprintEndDate:localStorage.getItem('rs_sprint_end')||'',
+    sprintStartDate:localStorage.getItem('rs_sprint_start')||''
+  };
+}
+function saveConfig(){
+  localStorage.setItem('rs_url',document.getElementById('config-url').value.trim());
+  localStorage.setItem('rs_name',document.getElementById('config-name').value.trim());
+  localStorage.setItem('rs_partner',document.getElementById('config-partner').value.trim());
+  localStorage.setItem('rs_sprint_length',document.getElementById('config-sprint-length').value);
+  applyNames(); showStatus('config-status','success','Settings saved.');
+}
+function applyNames(){
+  const c=getConfig();
+  const uname=currentUser==='p1'?c.name:c.partner;
+  document.getElementById('home-greeting').textContent='Hey '+uname;
+  document.getElementById('user-switch-label').textContent=uname;
+  document.getElementById('effort-p1-name').textContent=c.name;
+  document.getElementById('effort-p2-name').textContent=c.partner;
+  const p1=document.getElementById('opt-p1'),p2=document.getElementById('opt-p2');
+  if(p1)p1.text=c.name; if(p2)p2.text=c.partner;
+}
 
-  function selectDiff(btn, val, cls) {
-    selectedDiff = val;
-    document.querySelectorAll('.diff-btn').forEach(b => b.className = 'diff-btn');
-    btn.classList.add('sel-' + cls);
-  }
+// ── USER SWITCH ─────────────────────────────────────────────
+function switchUser(){
+  currentUser=currentUser==='p1'?'p2':'p1';
+  localStorage.setItem('rs_current_user',currentUser);
+  applyNames();
+  loadHomeTasks();
+}
 
-  function toggleDueCal(cb) {
-    document.getElementById('due-cal-details').style.display = cb.checked ? 'block' : 'none';
-    const t = document.getElementById('task-title').value;
-    if (cb.checked && t) document.getElementById('due-event-title').value = 'Due: ' + t;
-  }
+// ── NAV ─────────────────────────────────────────────────────
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const pages=['home','backlog',null,'sprint','retro'];
+  pages.forEach((p,i)=>{if(p===id){const btns=document.querySelectorAll('.nav-btn');if(btns[i])btns[i].classList.add('active');}});
+  if(id==='backlog')loadBacklog();
+  if(id==='home'){loadHomeTasks();renderSprintCountdown();}
+  window.scrollTo(0,0);
+}
+function homeIconTap(){
+  homeTapCount++;
+  clearTimeout(homeTapTimer);
+  homeTapTimer=setTimeout(()=>homeTapCount=0,1500);
+  if(homeTapCount>=5){homeTapCount=0;showPage('setup');}
+  else showPage('home');
+}
 
-  function updateEventTitle() {
-    const v = document.getElementById('event-type').value;
-    if (v !== 'Custom') document.getElementById('event-title').value = v;
-  }
+// ── STATUS ───────────────────────────────────────────────────
+function showStatus(id,type,msg){
+  const el=document.getElementById(id);if(!el)return;
+  el.className='status '+type;el.textContent=msg;
+  setTimeout(()=>el.className='status',5000);
+}
 
-  function getConfig() {
-    return {
-      url: localStorage.getItem('rs_url') || '',
-      name: localStorage.getItem('rs_name') || 'John',
-      partner: localStorage.getItem('rs_partner') || 'Partner'
-    };
-  }
+// ── API ──────────────────────────────────────────────────────
+async function post(payload){
+  const c=getConfig();if(!c.url)return;
+  await fetch(c.url+'?ts='+Date.now(),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+}
+async function fetchFromScript(action){
+  const c=getConfig();if(!c.url)return null;
+  try{const r=await fetch(c.url+'?action='+action+'&ts='+Date.now());return await r.json();}
+  catch(e){return null;}
+}
 
-  function saveConfig() {
-    const url = document.getElementById('config-url').value.trim();
-    const name = document.getElementById('config-name').value.trim();
-    const partner = document.getElementById('config-partner').value.trim();
-    localStorage.setItem('rs_url', url);
-    localStorage.setItem('rs_name', name);
-    localStorage.setItem('rs_partner', partner);
-    if (name) document.getElementById('opt-p1').text = name;
-    if (partner) document.getElementById('opt-p2').text = partner;
-    showStatus('config-status', 'success', 'Settings saved.');
-  }
+// ── SPRINT COUNTDOWN ─────────────────────────────────────────
+function renderSprintCountdown(){
+  const c=getConfig();
+  if(!c.sprintEndDate||!c.sprintStartDate){document.getElementById('sprint-countdown').style.display='none';return;}
+  const now=new Date(); const end=new Date(c.sprintEndDate+'T23:59:59'); const start=new Date(c.sprintStartDate+'T00:00:00');
+  const totalDays=Math.max(1,Math.round((end-start)/(1000*60*60*24)));
+  const daysLeft=Math.max(0,Math.ceil((end-now)/(1000*60*60*24)));
+  const pct=Math.min(100,Math.round(((totalDays-daysLeft)/totalDays)*100));
+  document.getElementById('sprint-countdown').style.display='block';
+  document.getElementById('countdown-text').textContent=daysLeft===0?'today':daysLeft===1?'tomorrow':'in '+daysLeft+' days';
+  document.getElementById('countdown-fill').style.width=pct+'%';
+}
 
-  function showStatus(id, type, msg) {
-    const el = document.getElementById(id);
-    el.className = 'status ' + type;
-    el.textContent = msg;
-    setTimeout(() => el.className = 'status', 5000);
-  }
-
-  async function post(payload) {
-    const cfg = getConfig();
-    if (!cfg.url) return false;
-    await fetch(cfg.url + '?ts=' + Date.now(), {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
-    return true;
-  }
-
-  async function submitTask() {
-    const title = document.getElementById('task-title').value.trim();
-    if (!title) { showStatus('task-status','error','Please enter a task title.'); return; }
-    const cfg = getConfig();
-    const due = document.getElementById('task-due').value;
-    const createCal = document.getElementById('task-cal-toggle').checked;
-    const btn = document.getElementById('task-btn');
-    btn.classList.add('loading'); btn.textContent = 'Saving...';
-
-    const payload = {
-      action: 'addTask', title,
-      notes: document.getElementById('task-notes').value.trim(),
-      difficulty: selectedDiff,
-      owner: document.getElementById('task-owner').value,
-      sprint: document.getElementById('task-sprint').value,
-      due: due || '',
-      createdBy: cfg.name,
-      timestamp: new Date().toISOString(),
-      createCalEvent: createCal,
-      calEventTitle: createCal ? document.getElementById('due-event-title').value : '',
-      calEventTime: createCal ? document.getElementById('due-event-time').value : '',
-      calEventDuration: createCal ? parseInt(document.getElementById('due-event-duration').value) : 0,
-      calendarId: CALENDAR_ID
-    };
-
-    if (!cfg.url) {
-      setTimeout(() => {
-        btn.classList.remove('loading'); btn.textContent = 'Save to backlog';
-        showStatus('task-status','success','Demo mode — add your Apps Script URL in Setup to save for real.');
-      }, 600);
-      return;
-    }
-
-    try {
-      await post(payload);
-      showStatus('task-status','success','Task saved. Check your Google Sheet to confirm.');
-      document.getElementById('task-title').value = '';
-      document.getElementById('task-notes').value = '';
-      document.getElementById('task-due').value = '';
-      document.getElementById('task-cal-toggle').checked = false;
-      document.getElementById('due-cal-details').style.display = 'none';
-    } catch(e) {
-      showStatus('task-status','error','Request failed: ' + e.message);
-    }
-    btn.classList.remove('loading'); btn.textContent = 'Save to backlog';
-  }
-
-  async function submitEvent() {
-    const title = document.getElementById('event-title').value.trim();
-    const date = document.getElementById('event-date').value;
-    if (!title || !date) { showStatus('event-status','error','Please fill in title and date.'); return; }
-    const cfg = getConfig();
-    const btn = document.getElementById('event-btn');
-    btn.classList.add('loading'); btn.textContent = 'Creating...';
-
-    const payload = {
-      action: 'createEvent', title,
-      description: document.getElementById('event-desc').value.trim(),
-      date, startTime: document.getElementById('event-start').value,
-      duration: parseInt(document.getElementById('event-duration').value),
-      calendarId: CALENDAR_ID
-    };
-
-    if (!cfg.url) {
-      setTimeout(() => {
-        btn.classList.remove('loading'); btn.textContent = 'Create calendar event';
-        showStatus('event-status','success','Demo mode — add your Apps Script URL in Setup to save for real.');
-      }, 600);
-      return;
-    }
-
-    try {
-      await post(payload);
-      showStatus('event-status','success','Event created. Check your Relationship Sprints calendar.');
-    } catch(e) {
-      showStatus('event-status','error','Request failed: ' + e.message);
-    }
-    btn.classList.remove('loading'); btn.textContent = 'Create calendar event';
-  }
-
-  window.addEventListener('load', () => {
-    const cfg = getConfig();
-    document.getElementById('config-url').value = cfg.url;
-    document.getElementById('config-name').value = cfg.name;
-    document.getElementById('config-partner').value = cfg.partner;
-    document.getElementById('event-date').value = new Date().toISOString().split('T')[0];
-    if (cfg.name) document.getElementById('opt-p1').text = cfg.name;
-    if (cfg.partner) document.getElementById('opt-p2').text = cfg.partner;
+// ── SUGGESTION ENGINE ────────────────────────────────────────
+function getSuggestion(task){
+  // look at completed tasks in backlogData, find pattern by keyword match
+  const c=getConfig();
+  const completed=backlogData.filter(t=>t.status==='Done'&&t.id!==task.id);
+  if(completed.length<3)return null;
+  const words=(task.title+' '+(task.notes||'')).toLowerCase().split(/\s+/);
+  let p1easy=0,p1hard=0,p2easy=0,p2hard=0;
+  completed.forEach(t=>{
+    const tw=(t.title+' '+(t.notes||'')).toLowerCase();
+    const match=words.some(w=>w.length>3&&tw.includes(w));
+    if(!match)return;
+    if(t.effort_p1==='Easy')p1easy++;if(t.effort_p1==='Hard')p1hard++;
+    if(t.effort_p2==='Easy')p2easy++;if(t.effort_p2==='Hard')p2hard++;
   });
+  const p1score=p1easy-p1hard; const p2score=p2easy-p2hard;
+  if(p1score>1&&p1score>p2score+1)return c.name+' tends to find these easier';
+  if(p2score>1&&p2score>p1score+1)return c.partner+' tends to find these easier';
+  return null;
+}
+
+// ── ADD MODAL ────────────────────────────────────────────────
+function openAddModal(){
+  document.getElementById('add-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeAddModal(){
+  document.getElementById('add-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeAddModalOutside(e){if(e.target===document.getElementById('add-modal'))closeAddModal();}
+function toggleModalCal(cb){
+  document.getElementById('m-cal-details').style.display=cb.checked?'block':'none';
+  const t=document.getElementById('m-title').value;
+  if(cb.checked&&t)document.getElementById('m-cal-title').value='Due: '+t;
+}
+function selectDiff(btn,val,cls){
+  selectedDiff=val;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.className='diff-btn');
+  btn.classList.add('sel-'+cls);
+}
+function setPersonEffort(person,val,btn){
+  if(person==='p1')effortP1=val;else effortP2=val;
+  const container=document.getElementById('effort-'+person+'-btns');
+  container.querySelectorAll('.ep-btn').forEach(b=>b.className='ep-btn');
+  btn.classList.add('sel-'+val.toLowerCase());
+}
+
+async function submitModalTask(){
+  const title=document.getElementById('m-title').value.trim();
+  if(!title){showStatus('m-status','error','Please enter a task title.');return;}
+  const c=getConfig(),due=document.getElementById('m-due').value,cc=document.getElementById('m-cal-toggle').checked;
+  const btn=document.getElementById('m-save-btn');btn.classList.add('loading');btn.textContent='Saving...';
+  const payload={
+    action:'addTask',title,
+    notes:document.getElementById('m-notes').value.trim(),
+    difficulty:selectedDiff,
+    effortP1,effortP2,
+    owner:document.getElementById('m-owner').value,
+    sprint:document.getElementById('m-sprint').value,
+    due:due||'',createdBy:c.name,
+    timestamp:new Date().toISOString(),
+    createCalEvent:cc,
+    calEventTitle:cc?document.getElementById('m-cal-title').value:'',
+    calEventTime:cc?document.getElementById('m-cal-time').value:'',
+    calEventDuration:cc?parseInt(document.getElementById('m-cal-dur').value):0,
+    calendarId:CALENDAR_ID
+  };
+  if(!c.url){setTimeout(()=>{btn.classList.remove('loading');btn.textContent='Save task';showStatus('m-status','info','Demo mode — tap Home 5x to access Setup.');},500);return;}
+  try{
+    await post(payload);
+    showStatus('m-status','success','Task saved.');
+    setTimeout(()=>{
+      closeAddModal();
+      document.getElementById('m-title').value='';document.getElementById('m-notes').value='';document.getElementById('m-due').value='';
+      document.getElementById('m-cal-toggle').checked=false;document.getElementById('m-cal-details').style.display='none';
+      document.querySelectorAll('.diff-btn').forEach(b=>b.className='diff-btn');
+      document.querySelectorAll('.diff-btn')[1].classList.add('sel-medium');selectedDiff='Medium';
+      effortP1='Medium';effortP2='Medium';
+      document.querySelectorAll('#effort-p1-btns .ep-btn').forEach((b,i)=>{b.className='ep-btn';if(i===1)b.classList.add('sel-medium');});
+      document.querySelectorAll('#effort-p2-btns .ep-btn').forEach((b,i)=>{b.className='ep-btn';if(i===1)b.classList.add('sel-medium');});
+      loadBacklog();loadHomeTasks();
+    },1200);
+  }catch(e){showStatus('m-status','error','Request failed.');}
+  btn.classList.remove('loading');btn.textContent='Save task';
+}
+
+// ── HOME TASKS ───────────────────────────────────────────────
+async function loadHomeTasks(){
+  const list=document.getElementById('home-tasks-list');
+  const c=getConfig();
+  if(!c.url){list.innerHTML='<div class="empty-state"><div class="ei">👋</div><p>Add your Apps Script URL in Setup.<br><small style="color:var(--text3);">Tap Home 5x to access Setup.</small></p></div>';updateStats([]);return;}
+  list.innerHTML='<div class="loading-msg">Loading...</div>';
+  const data=await fetchFromScript('getTasks');
+  if(!data||!data.tasks){list.innerHTML='<div class="empty-state"><div class="ei">✓</div><p>No tasks in your current sprint yet.</p></div>';updateStats([]);return;}
+  if(backlogData.length===0)backlogData=data.tasks;
+  const name=currentUser==='p1'?c.name:c.partner;
+  homeTasksLocal=data.tasks.filter(t=>{
+    if(t.sprint!=='Current'||t.status==='Done')return false;
+    const ow=t.owner||'Both';
+    return ow==='Both'||ow===name||ow===currentUser;
+  });
+  renderHomeTasks();
+}
+
+function updateStats(tasks){
+  const total=tasks.length, done=tasks.filter(t=>t._localDone).length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-left').textContent=total-done;
+}
+
+function renderHomeTasks(){
+  const list=document.getElementById('home-tasks-list');
+  const c=getConfig();
+  const uname=currentUser==='p1'?c.name:c.partner;
+  updateStats(homeTasksLocal);
+  if(!homeTasksLocal.length){
+    list.innerHTML='<div class="empty-state"><div class="ei">✓</div><p>No tasks assigned to '+uname+' this sprint.<br>Use sprint planning to pick items from your backlog.</p></div>';
+    return;
+  }
+  list.innerHTML=homeTasksLocal.map((t,i)=>{
+    const effort=currentUser==='p1'?(t.effort_p1||'Medium'):(t.effort_p2||'Medium');
+    const effortCls=effort.toLowerCase();
+    return`<div class="home-task ${t._localDone?'done-visual':''}" id="ht-${i}">
+      <div class="ht-check ${t._localDone?'checked':''}" onclick="toggleHomeDone(${i},'${t.id}')">
+        <svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg>
+      </div>
+      <div class="ht-body">
+        <div class="ht-title">${t.title}</div>
+        <div class="ht-meta">
+          <span class="ht-effort ${effortCls}">${effort} for you</span>
+          ${t.due?`<span class="ht-due">Due ${formatDate(t.due)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHomeDone(i,id){
+  homeTasksLocal[i]._localDone=!homeTasksLocal[i]._localDone;
+  post({action:'updateTask',id,status:homeTasksLocal[i]._localDone?'Done':'Open'});
+  renderHomeTasks();
+}
+
+// ── BACKLOG ──────────────────────────────────────────────────
+async function loadBacklog(){
+  const list=document.getElementById('backlog-list');
+  list.innerHTML='<div class="loading-msg">Loading...</div>';
+  const c=getConfig();
+  if(!c.url){list.innerHTML='<div class="empty-state"><div class="ei">📋</div><p>Add your Apps Script URL in Setup to load your backlog.</p></div>';return;}
+  const data=await fetchFromScript('getTasks');
+  if(!data||!data.tasks){list.innerHTML='<div class="empty-state"><div class="ei">📋</div><p>No tasks yet. Tap + to add your first one.</p></div>';return;}
+  backlogData=data.tasks;renderBacklog();
+}
+
+function effortPill(val,name){
+  if(!val||val==='undefined')return'';
+  const cls=val.toLowerCase();
+  return`<span class="bp-effort-pill ${cls}">${name}: ${val}</span>`;
+}
+
+function renderBacklog(){
+  const list=document.getElementById('backlog-list');
+  const c=getConfig();
+  let tasks=backlogData;
+  if(backlogFilter==='Done')tasks=tasks.filter(t=>t.status==='Done');
+  else if(backlogFilter==='all')tasks=tasks.filter(t=>t.status!=='Done');
+  else tasks=tasks.filter(t=>t.sprint===backlogFilter&&t.status!=='Done');
+  if(!tasks.length){list.innerHTML='<div class="empty-state"><div class="ei">✓</div><p>Nothing here. Tap + to add a task.</p></div>';return;}
+  list.innerHTML=tasks.map((t,i)=>{
+    const sug=getSuggestion(t);
+    return`<div class="task-card" onclick="toggleTask(${i})">
+      <div class="task-title">${t.title}</div>
+      ${t.notes?`<div class="task-notes-txt">${t.notes}</div>`:''}
+      <div class="task-meta">
+        <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+        <span class="badge ${t.sprint==='Current'?'current':'backlog'}">${t.sprint||'Backlog'}</span>
+        ${t.due?`<span class="task-due">Due ${formatDate(t.due)}</span>`:''}
+      </div>
+      ${sug?`<div style="margin-top:6px;"><span class="suggest-tag"><svg viewBox="0 0 12 12" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><circle cx="6" cy="6" r="4"/><line x1="6" y1="4" x2="6" y2="6"/><line x1="6" y1="8" x2="6.01" y2="8"/></svg>${sug}</span></div>`:''}
+      <div class="task-expand ${expandedTask===i?'open':''}" id="ted-${i}">
+        <div class="effort-display" style="margin-bottom:8px;">
+          ${effortPill(t.effort_p1,c.name)} ${effortPill(t.effort_p2,c.partner)}
+        </div>
+        <div class="btn-row" style="margin-top:0;">
+          <button class="btn ghost sm" onclick="markDone(event,'${t.id}',${i})">Mark done</button>
+          <button class="btn ghost sm" onclick="moveToSprint(event,'${t.id}',${i},'${t.sprint==='Current'?'Backlog':'Current'}')">
+            ${t.sprint==='Current'?'To backlog':'To sprint'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTask(i){expandedTask=expandedTask===i?null:i;renderBacklog();}
+async function markDone(e,id,i){e.stopPropagation();await post({action:'updateTask',id,status:'Done'});backlogData=backlogData.map(t=>t.id===id?{...t,status:'Done'}:t);renderBacklog();}
+async function moveToSprint(e,id,i,target){e.stopPropagation();await post({action:'updateTask',id,sprint:target});backlogData=backlogData.map(t=>t.id===id?{...t,sprint:target}:t);renderBacklog();}
+function filterBacklog(val,btn){backlogFilter=val;expandedTask=null;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBacklog();}
+function formatDate(str){if(!str)return'';const d=new Date(str+'T12:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+// ── SCHEDULE EVENT ────────────────────────────────────────────
+function showScheduleEvent(){document.getElementById('sprint-home').style.display='none';document.getElementById('schedule-event-section').style.display='block';}
+function hideScheduleEvent(){document.getElementById('sprint-home').style.display='block';document.getElementById('schedule-event-section').style.display='none';}
+function updateEventTitle(){const v=document.getElementById('event-type').value;if(v!=='Custom')document.getElementById('event-title').value=v;}
+async function submitEvent(){
+  const title=document.getElementById('event-title').value.trim(),date=document.getElementById('event-date').value;
+  if(!title||!date){showStatus('event-status','error','Please fill in title and date.');return;}
+  const c=getConfig(),btn=document.getElementById('event-btn');btn.classList.add('loading');btn.textContent='Creating...';
+  if(!c.url){setTimeout(()=>{btn.classList.remove('loading');btn.textContent='Create calendar event';showStatus('event-status','info','Demo mode.');},500);return;}
+  try{await post({action:'createEvent',title,description:document.getElementById('event-desc').value.trim(),date,startTime:document.getElementById('event-start').value,duration:parseInt(document.getElementById('event-duration').value),calendarId:CALENDAR_ID});showStatus('event-status','success','Event created in your Relationship Sprints calendar.');}
+  catch(e){showStatus('event-status','error','Request failed.');}
+  btn.classList.remove('loading');btn.textContent='Create calendar event';
+}
+
+// ── WIZARDS ───────────────────────────────────────────────────
+const PLANNING_STEPS=[
+  {q:'How are you both feeling going into this sprint?',hint:'Check in before diving into tasks.',type:'choice',choices:['Energized and ready','Good, steady','A bit stretched thin','Honestly tired'],key:'energy'},
+  {q:'What is one thing that must happen this sprint?',hint:'Just one. The thing that makes this sprint a success no matter what else.',type:'text',placeholder:'e.g. Have a real date night, not just dinner in front of the TV',key:'mustDo'},
+  {q:'When does this sprint end?',hint:"Set an end date and we'll show a countdown on your home screen.",type:'sprint-dates',key:'sprintEnd'},
+  {q:'Pick items from your backlog for this sprint.',hint:'Tap to select. Personal effort scores shown for each of you. These move into your current sprint.',type:'backlog-pick',key:'selectedTasks'},
+  {q:'Anything that might get in the way this sprint?',hint:'Travel, work stress, family stuff. Name it now.',type:'text',placeholder:'e.g. Work is really busy this week...',key:'blockers'},
+  {q:'When do you want to do your sprint retro?',hint:"Pick a date and we'll create a calendar event.",type:'date-event',key:'retroDate',eventTitle:'Relationship Sprint Retro'},
+  {q:'Sprint goal set.',hint:"Here's a summary of what you're committing to.",type:'summary',key:'confirm'}
+];
+const STANDUP_STEPS=[
+  {q:'How are you both feeling right now?',hint:'Check in before anything else. Say it out loud, one person captures it.',type:'text',placeholder:'e.g. John: tired but good. Sarah: a little stressed from work...',key:'feeling'},
+  {q:'Any stress or blockers this week?',hint:"Name it, even if it's small. You don't have to fix it tonight.",type:'text',placeholder:'e.g. Work is heavy. Still feeling off after Sunday...',key:'blockers'},
+  {q:'Does anyone need something from the other this week?',hint:'Practical help, more time, a specific conversation, or just feeling seen.',type:'text',placeholder:'e.g. I just need 20 minutes of actual us-time...',key:'needs'},
+  {q:'One thing you appreciate about each other right now.',hint:'Required. End on something real.',type:'text',placeholder:'e.g. I appreciate how you handled the thing with the kids today...',key:'appreciation'},
+  {q:'Check-in complete.',hint:'Good work. Five minutes well spent.',type:'summary',key:'confirm'}
+];
+const RETRO_STEPS=[
+  {q:'Sprint task review.',hint:'Go through what you completed and what didn\'t get done. Add notes and decide what to carry forward.',type:'task-review',key:'taskReview'},
+  {q:'What went really well this sprint?',hint:'Start with the wins.',type:'text',placeholder:'e.g. We actually had two real date nights...',key:'wentWell'},
+  {q:'What was harder than expected?',hint:'No blame, just honesty.',type:'text',placeholder:'e.g. We kept pushing the hard conversation...',key:'hardStuff'},
+  {q:'Did your difficulty estimates feel accurate?',hint:'Were tasks harder or easier than you rated them?',type:'choice',choices:['Pretty accurate','Things were harder than rated','Things were easier than rated','Mixed bag'],key:'estimates'},
+  {q:'One thing you want to do differently next sprint.',hint:'Just one concrete change.',type:'text',placeholder:'e.g. Do our standup on Sunday evenings...',key:'improve'},
+  {q:'How would you rate this sprint overall?',hint:'1 = rough, 5 = really solid',type:'rating',key:'rating'},
+  {q:'Retro complete.',hint:'Great work reflecting together.',type:'summary',key:'confirm'}
+];
+
+function getSteps(t){return t==='planning'?PLANNING_STEPS:t==='standup'?STANDUP_STEPS:RETRO_STEPS;}
+
+function startWizard(type){
+  showPage(type==='retro'?'retro':'sprint');
+  if(type!=='retro'){document.getElementById('sprint-home').style.display='none';document.getElementById('schedule-event-section').style.display='none';}
+  else document.getElementById('retro-home').style.display='none';
+  document.getElementById('wizard-'+type).classList.add('active');
+  wizardState[type]={step:0,answers:{},selectedTaskIds:[],taskNotes:{}};
+  buildWizard(type);renderWizardStep(type);
+}
+function exitWizard(type){
+  document.getElementById('wizard-'+type).classList.remove('active');
+  if(type!=='retro')document.getElementById('sprint-home').style.display='block';
+  else document.getElementById('retro-home').style.display='block';
+  wizardState[type]=null;
+}
+function buildWizard(type){
+  const steps=getSteps(type);
+  document.getElementById(type+'-progress').innerHTML=steps.map((_,i)=>`<div class="step" id="${type}-p${i}"></div>`).join('');
+  document.getElementById(type+'-steps').innerHTML=steps.map((_,i)=>`<div class="wizard-step" id="${type}-s${i}"></div>`).join('');
+}
+
+function renderWizardStep(type){
+  const steps=getSteps(type),{step,answers,selectedTaskIds,taskNotes}=wizardState[type];
+  steps.forEach((_,i)=>{
+    document.getElementById(type+'-p'+i).className='step '+(i<step?'done':i===step?'active':'');
+    document.getElementById(type+'-s'+i).classList.toggle('active',i===step);
+  });
+  const s=steps[step],el=document.getElementById(type+'-s'+step);
+  const back=step>0?`<button class="btn ghost" onclick="prevStep('${type}')" style="flex:0 0 90px;">Back</button>`:'';
+  const lmap={energy:'Feeling',mustDo:'Must do',sprintEnd:'Sprint end',selectedTasks:'Sprint tasks',blockers:'Blockers',retroDate:'Retro date',taskReview:'Task review',feeling:'Feeling',needs:'Needs',appreciation:'Appreciation',wentWell:'Went well',hardStuff:'What was hard',estimates:'Estimates',improve:'Improve',rating:'Rating'};
+  const c=getConfig();
+
+  if(s.type==='summary'){
+    const sum=Object.entries(answers).filter(([k])=>k!=='confirm').map(([k,v])=>`<div class="sum-item"><div class="sum-label">${lmap[k]||k}</div><div class="sum-val">${v}</div></div>`).join('');
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div><div class="card" style="margin:0 0 1rem;">${sum}</div><button class="btn primary" onclick="finishWizard('${type}')">Save &amp; finish</button>`;
+    return;
+  }
+  if(s.type==='choice'){
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div><div class="choice-list">${s.choices.map(ch=>`<button class="choice-btn${answers[s.key]===ch?' selected':''}" onclick="pickChoice('${type}','${s.key}','${ch}',this)">${ch}</button>`).join('')}</div><div class="btn-row">${back}<button class="btn primary" onclick="nextStep('${type}')">Next</button></div>`;
+    return;
+  }
+  if(s.type==='rating'){
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div><div class="rating-row">${[1,2,3,4,5].map(n=>`<button class="rating-btn${answers[s.key]==n?' sel':''}" onclick="pickRating('${type}','${s.key}',${n},this)">${n}</button>`).join('')}</div><div class="btn-row">${back}<button class="btn primary" onclick="nextStep('${type}')">Next</button></div>`;
+    return;
+  }
+  if(s.type==='sprint-dates'){
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div>
+      <div class="field"><label>Sprint start</label><input type="date" id="ws-start" value="${new Date().toISOString().split('T')[0]}"/></div>
+      <div class="field"><label>Sprint end</label><input type="date" id="ws-end" value="${answers[s.key]||''}"/></div>
+      <div class="btn-row">${back}<button class="btn primary" onclick="saveSprintDates('${type}','${s.key}')">Next</button></div>`;
+    return;
+  }
+  if(s.type==='date-event'){
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div>
+      <div class="field"><label>Date</label><input type="date" id="wd-${type}" value="${answers[s.key]||''}"/></div>
+      <div class="row2">
+        <div class="field"><label>Time</label><input type="time" id="wt-${type}" value="19:00"/></div>
+        <div class="field"><label>Duration (min)</label><input type="number" id="wu-${type}" value="60" min="15" step="15"/></div>
+      </div>
+      <div class="btn-row">${back}<button class="btn primary" onclick="saveDateStep('${type}','${s.key}','${s.eventTitle}')">Next</button></div>`;
+    return;
+  }
+  if(s.type==='backlog-pick'){
+    const available=backlogData.filter(t=>t.sprint==='Backlog'&&t.status!=='Done');
+    const sel=selectedTaskIds||[];
+    const items=available.length?available.map(t=>{
+      const sug=getSuggestion(t);
+      return`<div class="backlog-pick-item ${sel.includes(t.id)?'selected':''}" onclick="togglePickItem('${type}','${t.id}')">
+        <div class="bp-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></div>
+        <div class="bp-body">
+          <div class="bp-title">${t.title}</div>
+          <div class="bp-meta">
+            <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+            ${t.due?`<span style="font-size:11px;color:var(--text2);">Due ${formatDate(t.due)}</span>`:''}
+          </div>
+          <div class="bp-effort" style="margin-top:5px;">
+            <span class="bp-effort-label">Effort:</span>
+            ${effortPill(t.effort_p1,c.name)} ${effortPill(t.effort_p2,c.partner)}
+            ${sug?`<span class="suggest-tag">${sug}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')
+    :'<div class="empty-state" style="padding:1.5rem 0;"><p>Backlog is empty. Add tasks using the + button first.</p></div>';
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div><div style="margin-bottom:1rem;">${items}</div><div class="btn-row">${back}<button class="btn primary" onclick="confirmPickItems('${type}')">Add to sprint (${sel.length})</button></div>`;
+    return;
+  }
+  if(s.type==='task-review'){
+    // show current sprint tasks — completed and incomplete
+    const sprintTasks=backlogData.filter(t=>t.sprint==='Current');
+    const done=sprintTasks.filter(t=>t.status==='Done');
+    const open=sprintTasks.filter(t=>t.status!=='Done');
+    const noteInputs=(tasks,label,cls)=>tasks.length?`
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">${label}</div>
+      ${tasks.map(t=>`
+        <div class="retro-task-card ${cls}">
+          <div class="rtc-header">
+            <div class="rtc-status ${cls==='completed'?'done':'open'}"></div>
+            <div class="rtc-title">${t.title}</div>
+          </div>
+          <div class="rtc-meta">
+            <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+            ${effortPill(t.effort_p1,c.name)} ${effortPill(t.effort_p2,c.partner)}
+          </div>
+          <div class="field" style="margin-top:8px;margin-bottom:0;">
+            <textarea id="rn-${t.id}" placeholder="${cls==='completed'?'Add notes on how it went...':'Why didn\'t this get done?'}" style="min-height:60px;font-size:13px;">${(wizardState[type].taskNotes||{})[t.id]||''}</textarea>
+          </div>
+          ${cls==='incomplete'?`<div class="rtc-actions"><button class="btn ghost sm" onclick="addToNextSprint('${type}','${t.id}','${t.title.replace(/'/g,"\\'")}')">Add to next sprint</button></div>`:''}
+        </div>`).join('')}`:'';
+    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div>
+      ${noteInputs(done,'Completed','completed')}
+      ${noteInputs(open,'Not completed','incomplete')}
+      ${!done.length&&!open.length?'<div class="empty-state" style="padding:1rem 0;"><p>No tasks found in the current sprint.</p></div>':''}
+      <div class="btn-row" style="margin-top:1rem;">${back}<button class="btn primary" onclick="saveTaskReview('${type}')">Next</button></div>`;
+    return;
+  }
+  // text
+  el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div>
+    <div class="field"><textarea id="wt2-${type}" placeholder="${s.placeholder||''}" style="min-height:110px;">${answers[s.key]&&answers[s.key]!=='(skipped)'?answers[s.key]:''}</textarea></div>
+    <div class="btn-row">${back}<button class="btn primary" onclick="saveText('${type}','${s.key}')">Next</button></div>`;
+}
+
+function saveSprintDates(type,key){
+  const start=document.getElementById('ws-start').value;
+  const end=document.getElementById('ws-end').value;
+  if(end){
+    localStorage.setItem('rs_sprint_end',end);
+    localStorage.setItem('rs_sprint_start',start||new Date().toISOString().split('T')[0]);
+    wizardState[type].answers[key]=end;
+  } else {
+    wizardState[type].answers[key]='(not set)';
+  }
+  advance(type);
+}
+
+async function addToNextSprint(type,id,title){
+  await post({action:'updateTask',id,sprint:'Backlog',status:'Open'});
+  backlogData=backlogData.map(t=>t.id===id?{...t,sprint:'Backlog',status:'Open'}:t);
+  // visually update the button
+  const btn=document.querySelector(`[onclick="addToNextSprint('${type}','${id}','${title.replace(/'/g,"\\'")}')"]`);
+  if(btn){btn.textContent='Added to backlog';btn.disabled=true;btn.style.color='var(--accent-text)';}
+}
+
+function saveTaskReview(type){
+  // collect all notes from the task review step
+  const sprintTasks=backlogData.filter(t=>t.sprint==='Current');
+  const noteSummaries=[];
+  sprintTasks.forEach(t=>{
+    const el=document.getElementById('rn-'+t.id);
+    if(el&&el.value.trim()){
+      wizardState[type].taskNotes[t.id]=el.value.trim();
+      noteSummaries.push(t.title+': '+el.value.trim());
+      // save note to sheet
+      post({action:'updateTask',id:t.id,notes:el.value.trim()});
+    }
+  });
+  wizardState[type].answers.taskReview=noteSummaries.length?noteSummaries.join(' | '):'(no notes added)';
+  advance(type);
+}
+
+function togglePickItem(type,id){
+  const state=wizardState[type];
+  const idx=state.selectedTaskIds.indexOf(id);
+  if(idx>-1)state.selectedTaskIds.splice(idx,1);
+  else state.selectedTaskIds.push(id);
+  renderWizardStep(type);
+}
+async function confirmPickItems(type){
+  const state=wizardState[type];const ids=state.selectedTaskIds;
+  if(!ids.length){state.answers.selectedTasks='No items selected';advance(type);return;}
+  const titles=[];
+  for(const id of ids){
+    await post({action:'updateTask',id,sprint:'Current'});
+    backlogData=backlogData.map(t=>{if(t.id===id){titles.push(t.title);return{...t,sprint:'Current'};}return t;});
+  }
+  state.answers.selectedTasks=titles.join(', ');
+  advance(type);
+}
+function pickChoice(type,key,val,btn){wizardState[type].answers[key]=val;btn.closest('.choice-list').querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');}
+function pickRating(type,key,val,btn){wizardState[type].answers[key]=val;btn.closest('.rating-row').querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
+function saveText(type,key){wizardState[type].answers[key]=document.getElementById('wt2-'+type).value.trim()||'(skipped)';advance(type);}
+function saveDateStep(type,key,et){
+  const d=document.getElementById('wd-'+type).value,t=document.getElementById('wt-'+type).value,u=document.getElementById('wu-'+type).value;
+  wizardState[type].answers[key]=d||'(not scheduled)';
+  if(d)post({action:'createEvent',title:et,date:d,startTime:t,duration:parseInt(u),calendarId:CALENDAR_ID,description:''});
+  advance(type);
+}
+function nextStep(type){const s=getSteps(type)[wizardState[type].step];if(!wizardState[type].answers[s.key])wizardState[type].answers[s.key]='(skipped)';advance(type);}
+function advance(type){const steps=getSteps(type);if(wizardState[type].step<steps.length-1){wizardState[type].step++;renderWizardStep(type);window.scrollTo(0,0);}}
+function prevStep(type){if(wizardState[type].step>0){wizardState[type].step--;renderWizardStep(type);window.scrollTo(0,0);}}
+
+async function finishWizard(type){
+  const c=getConfig();
+  await post({action:'saveWizard',wizardType:type,answers:wizardState[type].answers,completedBy:c.name,timestamp:new Date().toISOString()});
+  showStatus(type+'-status','success','Saved. Great work.');
+  setTimeout(()=>{exitWizard(type);showPage(type==='retro'?'retro':'sprint');},1500);
+}
+
+// ── INIT ────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  currentUser=localStorage.getItem('rs_current_user')||'p1';
+  const c=getConfig();
+  document.getElementById('config-url').value=c.url;
+  document.getElementById('config-name').value=c.name;
+  document.getElementById('config-partner').value=c.partner;
+  document.getElementById('config-sprint-length').value=c.sprintLength||'14';
+  document.getElementById('event-date').value=new Date().toISOString().split('T')[0];
+  const now=new Date();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('home-date').textContent=days[now.getDay()]+', '+months[now.getMonth()]+' '+now.getDate();
+  applyNames();
+  loadHomeTasks();
+  renderSprintCountdown();
+  fetchFromScript('getTasks').then(data=>{if(data&&data.tasks)backlogData=data.tasks;});
+});
 </script>
 </body>
 </html>
