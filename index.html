@@ -41,11 +41,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .pad{padding:0 1.25rem;}
 
 /* HOME HERO */
-.home-hero{margin:1.25rem;padding:1.5rem;background:linear-gradient(135deg,#0f2a1e 0%,#0d1f2d 100%);border:0.5px solid rgba(43,184,122,0.2);border-radius:var(--r-xl);position:relative;overflow:hidden;}
-.home-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;background:radial-gradient(circle,rgba(43,184,122,0.12) 0%,transparent 70%);border-radius:50%;}
+.home-hero{margin:1.25rem;padding:1.5rem;background:linear-gradient(135deg,#0f2a1e 0%,#0d1f2d 100%);border:0.5px solid rgba(43,184,122,0.2);border-radius:var(--r-xl);position:relative;}
 .hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
 .hero-greeting{font-size:12px;font-weight:600;color:var(--accent-text);letter-spacing:0.06em;text-transform:uppercase;}
-.user-switch{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.user-switch{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit;font-size:inherit;}
 .user-switch span{font-size:11px;font-weight:600;color:var(--text2);}
 .user-switch svg{width:12px;height:12px;stroke:var(--text2);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .hero-name{font-size:26px;font-weight:700;letter-spacing:-0.03em;line-height:1.15;margin-bottom:4px;}
@@ -373,10 +372,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="home-hero">
     <div class="hero-top">
       <div class="hero-greeting">Your sprint</div>
-      <div class="user-switch" onclick="switchUser()">
+      <button class="user-switch" onclick="switchUser()">
         <span id="user-switch-label">John</span>
         <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/></svg>
-      </div>
+      </button>
     </div>
     <div class="hero-name" id="home-greeting">Hey John</div>
     <div class="hero-date" id="home-date"></div>
