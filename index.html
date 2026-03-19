@@ -44,6 +44,42 @@
   --font-ui:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html{height:100%;}
+body.light-mode{
+  --bg:#f5f0e8;
+  --surface:#ffffff;
+  --surface2:#f0ebe0;
+  --surface3:#e5dfd2;
+  --border:rgba(60,40,20,0.08);
+  --border2:rgba(60,40,20,0.14);
+  --border3:rgba(60,40,20,0.24);
+  --text:#1a1410;
+  --text2:#6b5f4e;
+  --text3:#a89880;
+  --accent:#2a9e68;
+  --accent-dim:#d4f0e4;
+  --accent-text:#1a6b44;
+  --amber:#a06810;
+  --amber-dim:#faebd0;
+  --amber-text:#7a4e08;
+  --coral:#b84020;
+  --coral-dim:#fcddd4;
+  --coral-text:#8a2e14;
+  --pink:#a83060;
+  --pink-dim:#fad4e4;
+  --pink-text:#7a1e44;
+  --blue:#2470b0;
+  --blue-dim:#d4e8f8;
+  --blue-text:#174e80;
+  --gold:#9a7820;
+  --gold-dim:#f8ecc8;
+  --gold-text:#6a5010;
+  --red-dim:#fcd4d4;
+  --red-text:#8a1414;
+}
+body.light-mode .hearth-hero{background:linear-gradient(135deg,#d4f0e4 0%,#d4e8f8 100%);border-color:rgba(154,120,32,0.3);}
+body.light-mode .nav{background:rgba(245,240,232,0.97);}
+body.light-mode .countdown-fill{background:linear-gradient(90deg,var(--accent),var(--gold));}
+body.light-mode .field input,body.light-mode .field textarea,body.light-mode .field select{background:var(--surface);}
 body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:15px;min-height:100%;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);}
 
 /* ── NAV ── */
@@ -416,10 +452,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
   <div class="hearth-hero">
     <div class="hero-top">
       <div class="hero-eyebrow">Bristol & Co.</div>
-      <button class="user-switch" onclick="switchUser()">
-        <span id="user-switch-label">John</span>
-        <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/></svg>
-      </button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="user-switch" onclick="toggleTheme()" id="theme-toggle">
+          <span id="theme-label">🌙</span>
+        </button>
+        <button class="user-switch" onclick="switchUser()">
+          <span id="user-switch-label">John</span>
+          <svg viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"/></svg>
+        </button>
+      </div>
     </div>
     <div class="hero-name" id="home-greeting">Hey John</div>
     <div class="hero-status" id="hero-status-text">Bristol is quiet. For now.</div>
@@ -632,7 +673,19 @@ function applyNames(){
   if(p2){p2.text=c.partner;p2.value=c.partner;}
 }
 
-// ── USER SWITCH ──
+// ── THEME ──
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  localStorage.setItem('rs_theme',isLight?'light':'dark');
+  document.getElementById('theme-label').textContent=isLight?'☀️':'🌙';
+}
+function applyTheme(){
+  const saved=localStorage.getItem('rs_theme');
+  if(saved==='light'){
+    document.body.classList.add('light-mode');
+    document.getElementById('theme-label').textContent='☀️';
+  }
+}
 function switchUser(){
   currentUser=currentUser==='p1'?'p2':'p1';
   localStorage.setItem('rs_current_user',currentUser);
@@ -1302,6 +1355,7 @@ window.addEventListener('load',()=>{
   const now=new Date();
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  applyTheme();
   applyNames();
   loadHomeTasks();
   renderCountdown();
