@@ -480,6 +480,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
     <p id="opening-beat-text" style="font-family:var(--font-story);font-size:14px;color:var(--gold-text);font-style:italic;line-height:1.7;"></p>
   </div>
 
+  <div id="set-scene-btn-wrap" style="display:none;margin:0 1.25rem 1rem;">
+    <button class="btn gold-btn" onclick="triggerOpeningBeat()" id="set-scene-btn">
+      ✦ Set the scene for this quest
+    </button>
+    <div class="status" id="set-scene-status"></div>
+  </div>
+
   <div id="lifeline-alerts"></div>
 
   <div class="section-title" id="home-cases-label">Your active cases</div>
@@ -911,7 +918,7 @@ async function loadHomeTasks(){
   list.innerHTML='<div class="loading-msg">Checking the board...</div>';
   const data=await fetchFromScript('getTasks');
   if(!data||!data.tasks){list.innerHTML='<div class="empty-state"><div class="ei">✓</div><p>No active cases. Bristol is at peace.</p></div>';updateHearthStats([]);return;}
-  if(boardData.length===0)boardData=data.tasks;
+  boardData=data.tasks;
   const name=currentUser==='p1'?c.name:c.partner;
   homeTasksLocal=data.tasks.filter(t=>{
     if(t.sprint!=='Current'||t.status==='Done')return false;
@@ -925,12 +932,43 @@ async function loadHomeTasks(){
 function renderOpeningBeat(){
   const beat=localStorage.getItem('rs_opening_beat');
   const el=document.getElementById('opening-beat');
-  if(!el)return;
+  const btnWrap=document.getElementById('set-scene-btn-wrap');
+  const c=getConfig();
+  const questActive=boardData.some(t=>t.sprint==='Current'&&t.status!=='Done');
   if(beat){
-    el.style.display='block';
-    document.getElementById('opening-beat-text').textContent=beat;
+    if(el){el.style.display='block';document.getElementById('opening-beat-text').textContent=beat;}
+    if(btnWrap)btnWrap.style.display='none';
+  } else if(questActive&&c.apiKey){
+    if(el)el.style.display='none';
+    if(btnWrap)btnWrap.style.display='block';
   } else {
-    el.style.display='none';
+    if(el)el.style.display='none';
+    if(btnWrap)btnWrap.style.display='none';
+  }
+}
+
+async function triggerOpeningBeat(){
+  const c=getConfig();
+  const btn=document.getElementById('set-scene-btn');
+  btn.classList.add('loading');btn.textContent='Bristol stirs...';
+  const questCases=boardData.filter(t=>t.sprint==='Current');
+  const questSummary={
+    energy:'(quest already underway)',
+    mustDo:'',
+    blockers:'',
+    ownership:'',
+    cases:questCases.map(t=>({title:t.title,difficulty:t.difficulty,owner:t.owner})),
+    p1Name:c.name,p2Name:c.partner
+  };
+  const beat=await generateOpeningBeat(questSummary);
+  if(beat){
+    localStorage.setItem('rs_opening_beat',beat);
+    localStorage.setItem('rs_opening_beat_quest',new Date().toISOString());
+    renderOpeningBeat();
+    showStatus('set-scene-status','success','The scene is set.');
+  } else {
+    btn.classList.remove('loading');btn.textContent='✦ Set the scene for this quest';
+    showStatus('set-scene-status','error','Failed — check your API key in Settings.');
   }
 }
 
