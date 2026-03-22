@@ -1157,12 +1157,12 @@ let joysData=[];
 let joyFilter='all';
 let selectedJoyFor='Together';
 
-function getJoys(){
-  const saved=localStorage.getItem('rs_joys');
-  return saved?JSON.parse(saved):[];
-}
-function saveJoys(joys){
-  localStorage.setItem('rs_joys',JSON.stringify(joys));
+async function loadJoys(){
+  const c=getConfig();
+  if(!c.url){joysData=[];renderJoys();return;}
+  const data=await fetchFromScript('getJoys');
+  joysData=(data&&data.joys)?data.joys:[];
+  renderJoys();
 }
 
 function switchBoardTab(tab){
@@ -1174,7 +1174,7 @@ function switchBoardTab(tab){
   document.getElementById('board-tab-joys').style.background=isJoys?'var(--surface)':'transparent';
   document.getElementById('board-tab-joys').style.color=isJoys?'var(--text)':'var(--text2)';
   document.getElementById('board-subtitle').textContent=isJoys?'Things worth doing':'Every open case in Bristol';
-  if(isJoys)renderJoys();
+  if(isJoys)loadJoys();
 }
 
 function filterJoys(val,btn){
@@ -1190,12 +1190,10 @@ function renderJoys(){
   const p2=document.getElementById('joy-filter-p2');
   if(p1)p1.textContent=c.name;
   if(p2)p2.textContent=c.partner;
-  joysData=getJoys();
   const list=document.getElementById('joys-list');
+  if(!list)return;
   let joys=joysData;
-  if(joyFilter!=='all'){
-    joys=joys.filter(j=>j.for===joyFilter);
-  }
+  if(joyFilter!=='all') joys=joys.filter(j=>j.for===joyFilter);
   if(!joys.length){
     list.innerHTML='<div class="empty-state"><div class="ei">🌸</div><p>No joys yet.<br>Add something worth looking forward to.</p></div>';
     return;
@@ -1205,8 +1203,8 @@ function renderJoys(){
     const forLabel=j.for==='Together'?'Together':j.for==='p1'?c.name:c.partner;
     const forColor=j.for==='Together'?'var(--pink-text)':j.for==='p1'?'var(--accent-text)':'var(--blue-text)';
     const forBg=j.for==='Together'?'var(--pink-dim)':j.for==='p1'?'var(--accent-dim)':'var(--blue-dim)';
-    const isActive=Object.values(activeJoys).includes(j.id);
-    const lastDone=j.lastDone?`<span style="font-size:11px;color:var(--text3);">Last: ${formatDate(j.lastDone)}</span>`:'';
+    const isActive=Object.values(activeJoys).some(aj=>aj&&aj.id===j.id);
+    const lastDone=j.last_done?`<span style="font-size:11px;color:var(--text3);">Last: ${formatDate(j.last_done)}</span>`:'';
     return`<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1rem 1.1rem;margin:0 1.25rem 8px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
         <div style="font-size:15px;font-weight:500;line-height:1.3;">${j.title}</div>
@@ -1216,7 +1214,7 @@ function renderJoys(){
       <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
         ${lastDone}
         ${isActive?`<span style="font-size:11px;color:var(--gold-text);">✦ This quest</span>`:''}
-        <button onclick="deleteJoy(${i})" style="margin-left:auto;padding:4px 8px;font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;color:var(--text3);cursor:pointer;font-family:var(--font-ui);">Remove</button>
+        <button onclick="removeJoy('${j.id}')" style="margin-left:auto;padding:4px 8px;font-size:11px;background:transparent;border:0.5px solid var(--border2);border-radius:6px;color:var(--text3);cursor:pointer;font-family:var(--font-ui);">Remove</button>
       </div>
     </div>`;
   }).join('');
@@ -1239,35 +1237,36 @@ function selectJoyFor(val,btn){
   document.querySelectorAll('#add-joy-modal .weight-btn').forEach(b=>b.className='weight-btn');
   btn.classList.add('sel-medium');
 }
-function submitJoy(){
+async function submitJoy(){
   const title=document.getElementById('joy-title').value.trim();
   if(!title){showStatus('joy-status','error','Give this joy a name.');return;}
-  const joys=getJoys();
-  const joy={
-    id:'J-'+Date.now(),
+  const c=getConfig();
+  const btn=document.getElementById('joy-save-btn');
+  btn.classList.add('loading');btn.textContent='Adding...';
+  await post({
+    action:'addJoy',
     title,
     notes:document.getElementById('joy-notes').value.trim(),
     for:selectedJoyFor,
-    created:new Date().toISOString(),
-    lastDone:''
-  };
-  joys.push(joy);
-  saveJoys(joys);
+    createdBy:currentUser==='p1'?c.name:c.partner,
+    timestamp:new Date().toISOString()
+  });
   showStatus('joy-status','success','Added.');
-  setTimeout(()=>{
+  setTimeout(async()=>{
     closeAddJoyModal();
     document.getElementById('joy-title').value='';
     document.getElementById('joy-notes').value='';
     selectedJoyFor='Together';
     document.querySelectorAll('#add-joy-modal .weight-btn').forEach(b=>b.className='weight-btn');
     document.getElementById('joy-for-together').classList.add('sel-medium');
-    renderJoys();
+    btn.classList.remove('loading');btn.textContent='Add joy';
+    await loadJoys();
   },800);
 }
-function deleteJoy(i){
-  const joys=getJoys();
-  joys.splice(i,1);
-  saveJoys(joys);
+
+async function removeJoy(id){
+  await post({action:'deleteJoy',id});
+  joysData=joysData.filter(j=>j.id!==id);
   renderJoys();
 }
 
@@ -1522,7 +1521,13 @@ function startWizard(type){
   document.getElementById('schedule-event-section').style.display='none';
   document.getElementById('wizard-'+type).classList.add('active');
   wizardState[type]={step:0,answers:{},selectedCaseIds:[],caseNotes:{},selectedJoys:{},selectedJoyTitles:{}};
-  buildWizard(type);renderWizardStep(type);
+  buildWizard(type);
+  // preload joys for planning wizard
+  if(type==='planning'&&joysData.length===0){
+    loadJoys().then(()=>renderWizardStep(type));
+  } else {
+    renderWizardStep(type);
+  }
 }
 function exitWizard(type){
   document.getElementById('wizard-'+type).classList.remove('active');
@@ -1621,10 +1626,9 @@ function renderWizardStep(type){
   }
   if(s.type==='joy-pick'){
     const c=getConfig();
-    const allJoys=getJoys();
-    const together=allJoys.filter(j=>j.for==='Together');
-    const p1joys=allJoys.filter(j=>j.for==='p1');
-    const p2joys=allJoys.filter(j=>j.for==='p2');
+    const together=joysData.filter(j=>j.for==='Together');
+    const p1joys=joysData.filter(j=>j.for==='p1');
+    const p2joys=joysData.filter(j=>j.for==='p2');
     const sel=wizardState[type].selectedJoys||{together:null,p1:null,p2:null};
     const joyRow=(joys,key,label,color)=>joys.length?`
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">${label}</div>
@@ -1799,28 +1803,28 @@ function saveWizardJoys(type,key){
   if(titles.p1)parts.push(c.name+': '+titles.p1);
   if(titles.p2)parts.push(c.partner+': '+titles.p2);
   wizardState[type].answers[key]=parts.length?parts.join(', '):'(none selected)';
-  // save to localStorage so Hearth can display them
-  const joys=getJoys();
+  // save active joys to localStorage for Hearth display
   const activeJoys={};
   if(sel.together){
-    const j=joys.find(j=>j.id===sel.together);
+    const j=joysData.find(j=>j.id===sel.together);
     if(j)activeJoys.together=j;
   }
   if(sel.p1){
-    const j=joys.find(j=>j.id===sel.p1);
+    const j=joysData.find(j=>j.id===sel.p1);
     if(j)activeJoys.p1=j;
   }
   if(sel.p2){
-    const j=joys.find(j=>j.id===sel.p2);
+    const j=joysData.find(j=>j.id===sel.p2);
     if(j)activeJoys.p2=j;
   }
   localStorage.setItem('rs_quest_joys',JSON.stringify(activeJoys));
-  // stamp lastDone on selected joys
-  const updated=joys.map(j=>{
-    if(Object.values(sel).includes(j.id))return{...j,lastDone:new Date().toISOString()};
-    return j;
+  // stamp lastDone on selected joys in Sheet
+  const now=new Date().toISOString();
+  Object.values(sel).forEach(id=>{
+    if(id)post({action:'updateJoy',id,lastDone:now});
   });
-  saveJoys(updated);
+  // update local cache too
+  joysData=joysData.map(j=>Object.values(sel).includes(j.id)?{...j,last_done:now}:j);
   advance(type);
 }
 
