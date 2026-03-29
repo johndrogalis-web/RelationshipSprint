@@ -288,6 +288,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 .cost-pill.costs-me,.cost-pill.costsme{background:var(--coral-dim);color:var(--coral-text);}
 .suggest-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--gold-dim);color:var(--gold-text);}
 
+/* CHECKIN STEP */
+.checkin-num{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.checkin-icon{font-size:36px;margin-bottom:1rem;display:block;}
+.checkin-q{font-family:var(--font-story);font-size:24px;font-weight:600;line-height:1.25;letter-spacing:-0.02em;margin-bottom:0.75rem;color:var(--text);}
+.checkin-hint{font-size:15px;color:var(--text2);line-height:1.6;margin-bottom:0.75rem;}
+.checkin-prompt{font-size:13px;color:var(--text3);line-height:1.6;font-style:italic;margin-bottom:2rem;padding:10px 14px;background:var(--surface2);border-radius:var(--r);border-left:2px solid var(--border2);}
+.clear-choice{display:flex;flex-direction:column;gap:10px;margin-bottom:1.5rem;}
+.clear-btn{padding:14px 16px;text-align:left;font-size:15px;font-family:var(--font-ui);border:0.5px solid var(--border2);border-radius:var(--r-lg);background:var(--surface2);color:var(--text);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;width:100%;}
+.clear-btn:active{transform:scale(0.98);}
+.clear-btn .cb-label{font-weight:600;margin-bottom:3px;}
+.clear-btn .cb-sub{font-size:12px;color:var(--text2);line-height:1.4;}
+.clear-btn.sel-vent{border-color:var(--amber);background:var(--amber-dim);}
+.clear-btn.sel-vent .cb-label,.clear-btn.sel-vent .cb-sub{color:var(--amber-text);}
+.clear-btn.sel-address{border-color:var(--coral);background:var(--coral-dim);}
+.clear-btn.sel-address .cb-label,.clear-btn.sel-address .cb-sub{color:var(--coral-text);}
+.clear-btn.sel-nothing{border-color:var(--accent);background:var(--accent-dim);}
+.clear-btn.sel-nothing .cb-label,.clear-btn.sel-nothing .cb-sub{color:var(--accent-text);}
+.log-clear-form{margin-top:1rem;padding:1rem;background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--r-lg);}
+
 /* RETRO CASE REVIEW */
 .retro-case{background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--r-lg);padding:1rem 1.1rem;margin-bottom:10px;}
 .retro-case.closed-case{border-color:rgba(61,184,122,0.3);}
@@ -1650,40 +1669,70 @@ async function generateClosingChapter(sprintSummary){
   if(saved)storyChapters=JSON.parse(saved);
   const chapterNum=storyChapters.length+1;
   const history=storyChapters.map(ch=>`Chapter ${ch.num}: ${ch.title}\n${ch.body}`).join('\n\n---\n\n');
-  const openingBeat=sprintSummary.openingBeat?`\nThe opening beat that set the scene for this quest was:\n"${sprintSummary.openingBeat}"\n\nThe closing chapter should resolve or complicate what the opening beat set up.`:'';
-  const prompt=`You are the narrator of an ongoing urban fantasy story set in Bristol, Pennsylvania. The protagonists are John and Genevieve, a couple who live in a 1917 mill worker's house on Walnut Street and are the unofficial caretakers of their neighborhood's magical ecosystem. Tone: warm, grounded, whimsical — Dresden Files but gentler, neighborhood-scale stakes, childlike wonder.
+  const openingBeat=sprintSummary.openingBeat?`The opening beat that set the scene:\n"${sprintSummary.openingBeat}"\n`:'';
 
-The story so far:
-${history}
+  // Calculate success rate for adaptive scaling
+  const total=(sprintSummary.casesCompleted.length||0)+(sprintSummary.casesOpen.length||0);
+  const successRate=total>0?Math.round((sprintSummary.casesCompleted.length/total)*100):0;
+  const mode=successRate>=90?'CRUSHING IT':successRate>=60?'STEADY':' HUNKER DOWN';
+
+  const SYSTEM=`You are the Chronicler of Walnut Street — an ancient, observant, and slightly witty narrator. You record the lives of John and Genevieve as they become the true Stewards of a 1917 mill worker's house in Bristol, PA. Their real-world productivity is Domestic Magic that stabilizes the supernatural fabric of the neighborhood.
+
+THE WORLD RULES:
+- Completed tasks = Wards or Offerings. They keep the house running and the spirits content.
+- Incomplete tasks = Mundane Hazards. They manifest as humorous magical consequences: a Laundry Golem, a Dust-Mite Battalion, the Water Spirit sending fog into the basement.
+- Adaptive scaling based on performance:
+  * CRUSHING IT (90%+): The story scales up. The house feels solid. Midge or the Library Entity bring Community Requests or Bonus Quests.
+  * STEADY (60-89%): Normal progress. The Sprite is cautiously optimistic.
+  * HUNKER DOWN (<60%): Focus on the humor of the Hazards. The house needs reclaiming.
+- Tone: Urban Folk / Low Fantasy. Whimsical but grounded. A fixed drain is as heroic as a sword fight.
+
+THE CAST:
+- The House Sprite: Unnamed still — earns its name incrementally through their success. Currently on letter ${Math.min(3,Math.floor((sprintSummary.totalFavor||0)/10)+1)} of its name. Obsessed with the kitchen. Rearranges spices when stressed.
+- Midge: Local 7, Tooth Fairy Union. Official, high-strung, surprisingly warm when she respects you.
+- The Water Spirit: Ancient, moody, protective of the Delaware. Watching the riverfront development closely.
+- The Library Entity: Grundy Library, reference section. Judges quietly. Rewards competence.
+- The Mill Street Regular: There since 1987. The shop opened in 2019. Nobody has asked.
+
+RESPONSE FORMAT — follow this exactly:
+1. Chapter Title (vivid, specific — e.g., "The Siege of the Unfolded Socks" or "A Quiet Truce on Walnut Street")
+2. The Domestic State: One sentence on the house's vibe right now.
+3. The Narrative Beat: 2-3 paragraphs. Reference specific completed tasks as Wards. Involve at least one cast member.
+4. The Hazard Report: If tasks were missed, one paragraph describing the humorous magical consequence. Skip this section if everything was completed.
+5. The Next Threshold: One sentence cliffhanger or unlock teaser. If performance was high, hint at a Bonus Quest or name-reveal progress.`;
+
+  const prompt=`${SYSTEM}
+
+Story so far:
+${history||'This is Chapter One.'}
+
 ${openingBeat}
 
-Here is everything John and Genevieve shared during their quest debrief:
+QUEST DATA:
+- Performance mode: ${mode} (${successRate}% completion)
+- Cases completed (Wards offered): ${sprintSummary.casesCompleted.map(t=>t.title).join(', ')||'none'}
+- Cases incomplete (Hazard potential): ${sprintSummary.casesOpen.map(t=>t.title).join(', ')||'none'}
+- What went well: ${sprintSummary.wentWell||'(not noted)'}
+- What was hard: ${sprintSummary.hardStuff||'(not noted)'}
+- Notes from the field: ${sprintSummary.caseNotes||'(none)'}
+- One thing to change: ${sprintSummary.improve||'(not noted)'}
+- Quest rating: ${sprintSummary.questRating||'?'}/5
+- Total favor earned this quest: ${sprintSummary.totalFavor||0}
 
-Cases completed this quest: ${sprintSummary.casesCompleted.map(t=>t.title).join(', ')||'none'}
-Cases not completed: ${sprintSummary.casesOpen.map(t=>t.title).join(', ')||'none'}
-What went well: ${sprintSummary.wentWell||'(not noted)'}
-What was hard: ${sprintSummary.hardStuff||'(not noted)'}
-Case notes: ${sprintSummary.caseNotes||'(none)'}
-One thing to do differently: ${sprintSummary.improve||'(not noted)'}
-How they felt about the quest: ${sprintSummary.questRating||'(not rated)'} out of 5
-Total favor earned: ${sprintSummary.totalFavor}
-
-Use all of this. The hard stuff and the notes are just as important as what they completed. If something was emotionally difficult that should ripple into Bristol. If they named a specific frustration or win, let the neighborhood reflect it. If the opening beat planted something specific, pay it off here — resolved if they did well, complicated if they struggled.
-
-Write Chapter ${chapterNum}. 3-4 paragraphs. Start with just the chapter title on its own line. Make it feel like the honest, earned turn of a page — not a reward or a punishment, just the truth of what happened.`;
+Write Chapter ${chapterNum} now. Follow the format. Make it specific — use the actual task names in the narrative. Keep it punchy. The hazard report should be funny, not grim.`;
 
   try{
     const response=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':c.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
     });
     const data=await response.json();
     const text=data.content[0].text.trim();
     const lines=text.split('\n');
     const title=lines[0].replace(/^#+\s*/,'').trim();
     const body=lines.slice(1).join('\n').trim();
-    const chapter={num:chapterNum,title,body,date:new Date().toISOString()};
+    const chapter={num:chapterNum,title,body,date:new Date().toISOString(),successRate,mode};
     storyChapters.push(chapter);
     localStorage.setItem('rs_chapters',JSON.stringify(storyChapters));
     await post({action:'saveChapter',chapter,completedBy:c.name,timestamp:new Date().toISOString()});
@@ -1707,11 +1756,68 @@ const PLANNING_STEPS=[
   {q:'The quest is open.',hint:"Bristol stirs. Your opening beat is being written...",type:'summary-opening',key:'confirm'}
 ];
 const STANDUP_STEPS=[
-  {q:'How are you both feeling right now?',hint:'Check in before anything else. Say it out loud, one person captures it.',type:'text',placeholder:'e.g. John: tired but good. Genevieve: little stressed from work...',key:'feeling'},
-  {q:'Any stress or blockers this week?',hint:"Name it, even if it's small. You don't have to fix it tonight.",type:'text',placeholder:'e.g. Work is heavy. Still feeling off after Sunday...',key:'blockers'},
-  {q:'Does anyone need something from the other this week?',hint:'Practical help, more time, a specific conversation, or just feeling seen.',type:'text',placeholder:'e.g. I just need 20 minutes of actual us-time...',key:'needs'},
-  {q:'One thing you appreciate about each other right now.',hint:'Required. End on something real.',type:'text',placeholder:'e.g. I appreciate how you handled that thing today...',key:'appreciation'},
-  {q:'Debrief complete.',hint:'Good work. Five minutes well spent.',type:'summary',key:'confirm'}
+  {
+    type:'checkin',
+    key:'gratitude',
+    num:1,
+    q:'What are you grateful for right now?',
+    hint:'Something in your life. Not each other — that\'s next. Could be anything. Take turns.',
+    prompt:'Think small if you have to. The coffee was good. The dog is ridiculous. Something is working.',
+    icon:'🌱'
+  },
+  {
+    type:'checkin',
+    key:'appreciation',
+    num:2,
+    q:'What did you notice about each other this week?',
+    hint:'One specific thing each. Not general — specific. What did they actually do that you saw and appreciated.',
+    prompt:'Not "you\'re great." More like "when you did that thing Tuesday, I noticed, and it mattered."',
+    icon:'👀'
+  },
+  {
+    type:'checkin',
+    key:'relationship',
+    num:3,
+    q:'What felt good between you this week?',
+    hint:'A moment. A conversation. A laugh. Something that reminded you why you\'re doing this.',
+    prompt:'Doesn\'t have to be big. Sometimes it\'s just that you were in the same room and it felt easy.',
+    icon:'✦'
+  },
+  {
+    type:'clear',
+    key:'clear',
+    num:4,
+    q:'Anything sitting on your chest?',
+    hint:'Say it if there is. You don\'t have to fix it tonight — but naming it matters. If nothing\'s there, move on.',
+    prompt:'The goal isn\'t resolution. The goal is that neither of you goes to bed carrying something alone.',
+    icon:'🫁'
+  },
+  {
+    type:'checkin',
+    key:'support',
+    num:5,
+    q:'What do you need from each other next week?',
+    hint:'Practical stuff. Emotional stuff. Just say it. Don\'t make your partner guess.',
+    prompt:'Making it easier for your partner to love you the way you want — that\'s an act of service.',
+    icon:'🤝'
+  },
+  {
+    type:'checkin',
+    key:'forward',
+    num:6,
+    q:'What are you looking forward to?',
+    hint:'One thing each. Could be together, could be personal. Something that makes next week feel worth it.',
+    prompt:'Gratitude doesn\'t have to be backwards. You can be glad about something that hasn\'t happened yet.',
+    icon:'→'
+  },
+  {
+    type:'debrief-done',
+    key:'confirm',
+    num:7,
+    q:'That\'s it.',
+    hint:'',
+    icon:'🏠'
+  }
 ];
 const DEBRIEF_STEPS=[
   {q:'Case review.',hint:"Go through what you closed and what's still open. Add notes and carry anything forward.",type:'case-review',key:'caseReview'},
@@ -1747,6 +1853,7 @@ function exitWizard(type){
 function buildWizard(type){
   const steps=getSteps(type);
   document.getElementById(type+'-progress').innerHTML=steps.map((_,i)=>`<div class="step" id="${type}-p${i}"></div>`).join('');
+  document.getElementById(type+'-progress').style.display=type==='standup'?'none':'flex';
   document.getElementById(type+'-steps').innerHTML=steps.map((_,i)=>`<div class="wizard-step" id="${type}-s${i}"></div>`).join('');
 }
 
@@ -1759,7 +1866,7 @@ function renderWizardStep(type){
   const s=steps[step],el=document.getElementById(type+'-s'+step);
   const back=step>0?`<button class="btn ghost" onclick="prevStep('${type}')" style="flex:0 0 90px;">Back</button>`:'';
   const c=getConfig();
-  const lmap={energy:'Feeling',mustDo:'Must accomplish',questEnd:'Quest closes',selectedCases:'Cases in quest',blockers:'In the way',debriefDate:'Debrief date',caseReview:'Case notes',feeling:'Feeling',needs:'Needs',appreciation:'Appreciation',wentWell:'Went well',hardStuff:'Was hard',estimates:'Cost estimates',improve:'Do differently',rating:'Quest rating'};
+  const lmap={energy:'Feeling',mustDo:'Must accomplish',questEnd:'Quest closes',selectedCases:'Cases in quest',blockers:'In the way',debriefDate:'Debrief date',caseReview:'Case notes',feeling:'Feeling',needs:'Needs',appreciation:'Appreciation',wentWell:'Went well',hardStuff:'Was hard',estimates:'Cost estimates',improve:'Do differently',rating:'Quest rating',gratitude:'Gratitude',relationship:'What felt good',clear:'Clear type',clearTitle:'Logged case',support:'Support needed',forward:'Looking forward to',joys:'Quest joys',ownership:'Ownership',selectedTasks:'Tasks selected'};
 
   if(s.type==='summary'||s.type==='summary-story'||s.type==='summary-opening'){
     const sum=Object.entries(answers).filter(([k])=>k!=='confirm').map(([k,v])=>`<div class="sum-item"><div class="sum-label">${lmap[k]||k}</div><div class="sum-val">${v}</div></div>`).join('');
@@ -1858,6 +1965,75 @@ function renderWizardStep(type){
       <div class="btn-row">${back}<button class="btn primary" onclick="saveWizardJoys('${type}','${s.key}')">Next</button></div>`;
     return;
   }
+  if(s.type==='checkin'){
+    el.innerHTML=`
+      <div style="padding:0 1.25rem;">
+        <div class="checkin-num">${s.num} of 6</div>
+        <div class="checkin-icon">${s.icon}</div>
+        <div class="checkin-q">${s.q}</div>
+        <div class="checkin-hint">${s.hint}</div>
+        <div class="checkin-prompt">${s.prompt}</div>
+        <div class="btn-row">${back}<button class="btn primary" onclick="nextStep('${type}')">We talked about it →</button></div>
+      </div>`;
+    return;
+  }
+
+  if(s.type==='clear'){
+    const sel=answers[s.key]||'';
+    const showLog=sel==='address';
+    el.innerHTML=`
+      <div style="padding:0 1.25rem;">
+        <div class="checkin-num">${s.num} of 6</div>
+        <div class="checkin-icon">${s.icon}</div>
+        <div class="checkin-q">${s.q}</div>
+        <div class="checkin-hint">${s.hint}</div>
+        <div class="checkin-prompt">${s.prompt}</div>
+        <div class="clear-choice">
+          <button class="clear-btn ${sel==='nothing'?'sel-nothing':''}" onclick="selectClear('${type}','nothing')">
+            <div class="cb-label">Nothing tonight</div>
+            <div class="cb-sub">We're good. Move on.</div>
+          </button>
+          <button class="clear-btn ${sel==='vent'?'sel-vent':''}" onclick="selectClear('${type}','vent')">
+            <div class="cb-label">Just need to vent</div>
+            <div class="cb-sub">I want to be heard. Not looking for a fix, just for you to get it.</div>
+          </button>
+          <button class="clear-btn ${sel==='address'?'sel-address':''}" onclick="selectClear('${type}','address')">
+            <div class="cb-label">We should address this</div>
+            <div class="cb-sub">This needs actual attention. Log it so we don't drop it.</div>
+          </button>
+        </div>
+        ${showLog?`
+          <div class="log-clear-form">
+            <div class="card-label">Log this to the board</div>
+            <div class="field"><label>What is it</label><input type="text" id="clear-title" placeholder="Name it briefly..." value="${answers.clearTitle||''}"/></div>
+            <div class="field"><label>Where should it go</label>
+              <select id="clear-sprint" style="-webkit-appearance:none;">
+                <option value="Backlog">Backlog — we'll deal with it eventually</option>
+                <option value="Current">This quest — needs attention now</option>
+              </select>
+            </div>
+          </div>`:''}
+        <div class="btn-row" style="margin-top:1rem;">${back}<button class="btn primary" onclick="saveClear('${type}')" ${!sel?'disabled style="opacity:0.4;"':''}>Next →</button></div>
+      </div>`;
+    return;
+  }
+
+  if(s.type==='debrief-done'){
+    const c=getConfig();
+    const hadClear=answers.clear==='address'&&answers.clearTitle;
+    el.innerHTML=`
+      <div style="padding:1.5rem 1.25rem;text-align:center;">
+        <div style="font-size:48px;margin-bottom:1rem;">🏠</div>
+        <div style="font-family:var(--font-story);font-size:22px;font-weight:600;margin-bottom:0.75rem;">Good debrief, ${c.name} and ${c.partner}.</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:1.5rem;">The house sprite noticed. Bristol's a little steadier tonight.</div>
+        ${hadClear?`<div style="padding:10px 14px;background:var(--coral-dim);border:0.5px solid var(--coral);border-radius:var(--r-lg);margin-bottom:1rem;text-align:left;">
+          <div style="font-size:11px;font-weight:600;color:var(--coral-text);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Logged to the board</div>
+          <div style="font-size:14px;font-weight:500;">${answers.clearTitle}</div>
+        </div>`:''}
+        <button class="btn primary" onclick="finishWizard('${type}')">Close the debrief</button>
+      </div>`;
+    return;
+  }
   if(s.type==='case-review'){
     const questCases=boardData.filter(t=>t.sprint==='Current');
     const closed=questCases.filter(t=>t.status==='Done');
@@ -1937,21 +2113,33 @@ async function generateOpeningBeat(questSummary){
   const saved=localStorage.getItem('rs_chapters');
   if(saved)storyChapters=JSON.parse(saved);
   const history=storyChapters.slice(-3).map(ch=>`Chapter ${ch.num}: ${ch.title}\n${ch.body}`).join('\n\n---\n\n');
-  const prompt=`You are the narrator of an ongoing urban fantasy story set in Bristol, Pennsylvania. The protagonists are John and Genevieve, a couple who live in a 1917 mill worker's house on Walnut Street and are the unofficial caretakers of their neighborhood's magical ecosystem. Tone: warm, grounded, whimsical — Dresden Files but gentler, neighborhood-scale stakes, childlike wonder.
+
+  const SYSTEM=`You are the Chronicler of Walnut Street — an ancient, observant, and slightly witty narrator. You record the lives of John and Genevieve as they become the true Stewards of a 1917 mill worker's house in Bristol, PA. You interpret their real-world productivity as Domestic Magic that stabilizes the supernatural fabric of the neighborhood.
+
+THE WORLD:
+- The Mirror Effect: The house and Bristol's magical residents directly reflect John and Genevieve's relationship and task completion.
+- Completed tasks are Wards or Offerings. Incomplete tasks manifest as Mundane Hazards — a Laundry Golem, a Dust-Mite Battalion, the Water Spirit sending damp fog into the basement.
+- Tone: Urban Folk / Low Fantasy. Whimsical but grounded. Fixing a leak is as heroic as a sword fight.
+
+THE CAST:
+- The House Sprite: Lives in the walls. Obsessed with the kitchen. Rearranges spices when stressed. Has not yet earned its name — that depends on their performance.
+- Midge: Regional Rep, Local 7, Tooth Fairy Union. High-strung and official.
+- The Water Spirit: Ancient, moody, concerned about riverfront development on the Delaware.
+- The Library Entity: Lives in the Grundy Library reference section. Knows everything. Judges quietly.
+- The Mill Street Regular: Has ordered the same coffee every Tuesday since 1987. The shop opened in 2019.`;
+
+  const prompt=`${SYSTEM}
 
 Recent story:
-${history}
+${history||'This is the beginning of the chronicle.'}
 
-John and Genevieve are opening a new quest. Here is everything they shared during planning:
+John and Genevieve are opening a new quest. Here is what they shared:
+- Feeling going in: ${questSummary.energy||'(not noted)'}
+- The one thing that must happen: ${questSummary.mustDo||'(not noted)'}
+- What might get in the way: ${questSummary.blockers||'(not noted)'}
+- Cases they are taking on: ${questSummary.cases.map(t=>`"${t.title}" (${t.owner||'both'}, ${t.difficulty})`).join(', ')||'none yet'}
 
-How they are feeling going in: ${questSummary.energy||'(not noted)'}
-The one thing that must happen: ${questSummary.mustDo||'(not noted)'}
-What might get in the way: ${questSummary.blockers||'(not noted)'}
-Cases they are taking on: ${questSummary.cases.map(t=>`${t.title} (handled by ${t.owner||'both'}, weight: ${t.difficulty})`).join(', ')||'none'}
-
-Let their mood, their stated goal, and their worries shape the scene. If they are tired, Bristol feels it. If they are energized, something stirs with possibility. If there is a specific thing they must accomplish, plant that seed in the world.
-
-Write a short opening beat — 2 to 3 sentences only. Set the scene in Bristol. Plant one small seed of tension or mystery. Do not resolve anything. End on something that makes you want to know what happens next. No title, just the prose.`;
+Write the OPENING BEAT for this quest — 2 to 3 sentences only. Set the scene. Plant one specific seed of tension or possibility that connects directly to what they are about to tackle. Name a character if it fits. Do not resolve anything. End on something that makes you want to turn the page. No title. Just prose.`;
 
   try{
     const response=await fetch('https://api.anthropic.com/v1/messages',{
@@ -1992,6 +2180,25 @@ async function finishPlanningWithBeat(type){
     setTimeout(()=>{exitWizard(type);showPage('home');},1200);
   }
 }
+function selectClear(type,val){
+  wizardState[type].answers.clear=val;
+  renderWizardStep(type);
+}
+async function saveClear(type){
+  const sel=wizardState[type].answers.clear;
+  if(!sel)return;
+  if(sel==='address'){
+    const title=document.getElementById('clear-title')?document.getElementById('clear-title').value.trim():'';
+    const sprint=document.getElementById('clear-sprint')?document.getElementById('clear-sprint').value:'Backlog';
+    wizardState[type].answers.clearTitle=title;
+    if(title){
+      await post({action:'addTask',title,notes:'Surfaced in nightly debrief',difficulty:'Medium',effortP1:'Manageable',effortP2:'Manageable',owner:'Both',sprint,due:'',createdBy:getConfig().name,timestamp:new Date().toISOString(),createCalEvent:false,calendarId:CALENDAR_ID});
+      boardData=[];
+    }
+  }
+  advance(type);
+}
+
 function selectWizardJoy(type,key,id,title){
   if(!wizardState[type].selectedJoys)wizardState[type].selectedJoys={};
   // toggle off if already selected
@@ -2063,7 +2270,15 @@ function saveDateStep(type,key,et){
   if(d)post({action:'createEvent',title:et,date:d,startTime:t,duration:parseInt(u),calendarId:CALENDAR_ID,description:''});
   advance(type);
 }
-function nextStep(type){const s=getSteps(type)[wizardState[type].step];if(!wizardState[type].answers[s.key])wizardState[type].answers[s.key]='(skipped)';advance(type);}
+function nextStep(type){
+  const s=getSteps(type)[wizardState[type].step];
+  if(s.type==='checkin'||s.type==='debrief-done'){
+    wizardState[type].answers[s.key]=wizardState[type].answers[s.key]||'discussed';
+  } else if(!wizardState[type].answers[s.key]){
+    wizardState[type].answers[s.key]='(skipped)';
+  }
+  advance(type);
+}
 function advance(type){const steps=getSteps(type);if(wizardState[type].step<steps.length-1){wizardState[type].step++;renderWizardStep(type);window.scrollTo(0,0);}}
 function prevStep(type){if(wizardState[type].step>0){wizardState[type].step--;renderWizardStep(type);window.scrollTo(0,0);}}
 
