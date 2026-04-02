@@ -189,7 +189,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 
 /* WEIGHT BUTTONS */
 .weight-row{display:flex;gap:6px;}
-.weight-btn{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:0.5px solid var(--border2);border-radius:var(--r);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--font-ui);-webkit-tap-highlight-color:transparent;}
+.weight-btn{flex:1;padding:8px 4px;font-size:11px;font-weight:600;border:0.5px solid var(--border2);border-radius:var(--r);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--font-ui);-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;}
+.weight-btn .wb-name{font-size:11px;font-weight:600;line-height:1.2;}
+.weight-btn .wb-sub{font-size:9px;font-weight:400;opacity:0.75;line-height:1.2;}
 .weight-btn.sel-light{background:var(--accent-dim);color:var(--accent-text);border-color:var(--accent);}
 .weight-btn.sel-medium{background:var(--amber-dim);color:var(--amber-text);border-color:var(--amber);}
 .weight-btn.sel-heavy{background:var(--coral-dim);color:var(--coral-text);border-color:var(--coral);}
@@ -237,10 +239,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 
 /* BADGES */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
-.badge.light{background:var(--accent-dim);color:var(--accent-text);}
+.badge.light,.badge.Light{background:var(--accent-dim);color:var(--accent-text);}
 .badge.medium,.badge.Medium{background:var(--amber-dim);color:var(--amber-text);}
-.badge.heavy{background:var(--coral-dim);color:var(--coral-text);}
-.badge.volatile,.badge.charged{background:var(--pink-dim);color:var(--pink-text);}
+.badge.heavy,.badge.Heavy{background:var(--coral-dim);color:var(--coral-text);}
+.badge.volatile,.badge.Volatile,.badge.charged{background:var(--pink-dim);color:var(--pink-text);}
+.badge-weight{display:inline-flex;flex-direction:column;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;line-height:1.3;}
+.badge-weight .bw-sub{font-size:9px;font-weight:400;opacity:0.8;}
 .badge.backlog,.badge.open{background:var(--surface3);color:var(--text2);}
 .badge.current,.badge.active{background:var(--blue-dim);color:var(--blue-text);}
 .badge.done,.badge.closed{background:var(--accent-dim);color:var(--accent-text);}
@@ -451,10 +455,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
     <div class="field"><label>Notes (optional)</label><textarea id="m-notes" placeholder="Any context, details, or what's at stake..."></textarea></div>
     <div class="field"><label>Weight</label>
       <div class="weight-row">
-        <button class="weight-btn" onclick="selectWeight(this,'Light','light')">Light</button>
-        <button class="weight-btn sel-medium" onclick="selectWeight(this,'Medium','medium')">Medium</button>
-        <button class="weight-btn" onclick="selectWeight(this,'Heavy','heavy')">Heavy</button>
-        <button class="weight-btn" onclick="selectWeight(this,'Volatile','volatile')">Volatile</button>
+        <button class="weight-btn" onclick="selectWeight(this,'Light','light')"><span class="wb-name">A Small Ward</span><span class="wb-sub">Under 30 min</span></button>
+        <button class="weight-btn sel-medium" onclick="selectWeight(this,'Medium','medium')"><span class="wb-name">A Solid Offering</span><span class="wb-sub">A few hours</span></button>
+        <button class="weight-btn" onclick="selectWeight(this,'Heavy','heavy')"><span class="wb-name">A Great Working</span><span class="wb-sub">Full day+</span></button>
+        <button class="weight-btn" onclick="selectWeight(this,'Volatile','volatile')"><span class="wb-name">The Unpredictable</span><span class="wb-sub">Who knows</span></button>
       </div>
     </div>
     <div class="cost-section">
@@ -740,6 +744,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 
 <script>
 const CALENDAR_ID='a7f5d1c7fc7fc689ef24f57b33689799c8fc29e99ccf797724bbb34d32457911@group.calendar.google.com';
+
+// ── WEIGHT DISPLAY MAP ──
+// Internal values stay as Light/Medium/Heavy/Volatile for data compatibility
+// Display names are the story names with plain English subtitles
+const WEIGHT_DISPLAY={
+  Light:   {name:'A Small Ward',      sub:'Under 30 min',          cls:'light'},
+  Medium:  {name:'A Solid Offering',  sub:'A few hours',           cls:'medium'},
+  Heavy:   {name:'A Great Working',   sub:'Full day or more',      cls:'heavy'},
+  Volatile:{name:'The Unpredictable', sub:'We don\'t know yet',    cls:'volatile'}
+};
+function weightName(val){return (WEIGHT_DISPLAY[val]||WEIGHT_DISPLAY.Medium).name;}
+function weightSub(val){return (WEIGHT_DISPLAY[val]||WEIGHT_DISPLAY.Medium).sub;}
+function weightCls(val){return (WEIGHT_DISPLAY[val]||WEIGHT_DISPLAY.Medium).cls;}
 const OPENING_CHAPTER=`Chapter One: The House on Walnut Street
 
 The house at the end of Walnut Street was built in 1917, and it remembered everything.
@@ -946,6 +963,10 @@ async function fetchFromScript(action){
 }
 
 // ── FAVOR (points) ──
+function weightBadge(val){
+  const w=WEIGHT_DISPLAY[val]||WEIGHT_DISPLAY.Medium;
+  return`<span class="badge-weight ${w.cls}"><span>${w.name}</span><span class="bw-sub">${w.sub}</span></span>`;
+}
 function calcFavor(tasks){
   const map={Light:1,Medium:2,Heavy:3,Volatile:4};
   return tasks.filter(t=>t.status==='Done').reduce((s,t)=>s+(map[t.difficulty]||2),0);
@@ -1454,7 +1475,7 @@ function renderBoard(){
       <div class="case-title">${t.title}</div>
       ${t.notes?`<div class="case-notes-txt">${t.notes}</div>`:''}
       <div class="case-meta">
-        <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+        <${weightBadge(t.difficulty||'Medium')}
         <span class="badge ${t.sprint==='Current'?'active':'open'}">${t.sprint==='Current'?'Active Quest':'Open Cases'}</span>
         ${t.due?`<span class="case-due">Due ${formatDate(t.due)}</span>`:''}
       </div>
@@ -1558,7 +1579,7 @@ function renderBoard(){
           <div style="flex:1;">
             <div class="task-title" style="text-decoration:line-through;color:var(--text2);">${titleHtml}</div>
             <div class="task-meta" style="margin-top:4px;">
-              <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+              ${weightBadge(t.difficulty||'Medium')}
               ${t.completed_at?`<span style="font-size:11px;color:var(--text3);">Closed ${formatDate(t.completed_at)}</span>`:''}
             </div>
           </div>
@@ -1576,7 +1597,7 @@ function renderBoard(){
           <div class="task-title">${titleHtml}</div>
           ${notesHtml?`<div class="task-notes-txt">${notesHtml}</div>`:''}
           <div class="task-meta" style="margin-top:6px;">
-            <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+            ${weightBadge(t.difficulty||'Medium')}
             <span class="badge ${t.sprint==='Current'?'active':'backlog'}">${t.sprint==='Current'?'Active quest':'Backlog'}</span>
             ${t.due?`<span class="task-due">Due ${formatDate(t.due)}</span>`:''}
           </div>
@@ -2160,7 +2181,7 @@ function renderWizardStep(type){
         <div class="cp-body">
           <div class="cp-title">${t.title}</div>
           <div class="cp-meta">
-            <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+            <${weightBadge(t.difficulty||'Medium')}
             ${t.due?`<span style="font-size:11px;color:var(--text2);">Due ${formatDate(t.due)}</span>`:''}
           </div>
           <div class="cp-cost">
@@ -2297,7 +2318,7 @@ function renderWizardStep(type){
           <div class="rc-title">${t.title}</div>
         </div>
         <div class="rc-meta">
-          <span class="badge ${(t.difficulty||'medium').toLowerCase()}">${t.difficulty||'Medium'}</span>
+          <${weightBadge(t.difficulty||'Medium')}
           ${costPill(t.effort_p1,c.name)} ${costPill(t.effort_p2,c.partner)}
         </div>
         <div class="field" style="margin-top:8px;margin-bottom:0;">
@@ -2388,7 +2409,7 @@ John and Genevieve are opening a new quest. Here is what they shared:
 - Feeling going in: ${questSummary.energy||'(not noted)'}
 - The one thing that must happen: ${questSummary.mustDo||'(not noted)'}
 - What might get in the way: ${questSummary.blockers||'(not noted)'}
-- Cases they are taking on: ${questSummary.cases.map(t=>`"${t.title}" (${t.owner||'both'}, ${t.difficulty})`).join(', ')||'none yet'}
+- Cases they are taking on: ${questSummary.cases.map(t=>`"${t.title}" (${t.owner||'both'}, ${weightName(t.difficulty)})`).join(', ')||'none yet'}
 
 Write the OPENING BEAT for this quest — 2 to 3 sentences only. Set the scene. Plant one specific seed of tension or possibility that connects directly to what they are about to tackle. Name a character if it fits. Do not resolve anything. End on something that makes you want to turn the page. No title. Just prose.`;
 
@@ -2554,8 +2575,8 @@ async function finishAndGenerateStory(type){
     caseNotes:answers.caseReview,
     estimates:answers.estimates,
     openingBeat,
-    casesCompleted:questCases.filter(t=>t.status==='Done').map(t=>({title:t.title,difficulty:t.difficulty,owner:t.owner})),
-    casesOpen:questCases.filter(t=>t.status!=='Done').map(t=>({title:t.title,difficulty:t.difficulty,owner:t.owner})),
+    casesCompleted:questCases.filter(t=>t.status==='Done').map(t=>({title:t.title,difficulty:weightName(t.difficulty),owner:t.owner})),
+    casesOpen:questCases.filter(t=>t.status!=='Done').map(t=>({title:t.title,difficulty:weightName(t.difficulty),owner:t.owner})),
     totalFavor:calcFavor(questCases),
     p1Name:c.name,p2Name:c.partner
   };
