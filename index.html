@@ -1762,6 +1762,7 @@ function renderStageCard(){
     </div>`;
   }).join('');
 
+  // always show — even from day one
   card.style.display='block';
 }
 
@@ -2795,6 +2796,7 @@ window.addEventListener('load',()=>{
   }
   applyTheme();
   applyNames();
+  renderStageCard();
   loadHomeTasks();
   renderCountdown();
   if(!demoMode){
