@@ -559,6 +559,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 
   <div id="lifeline-alerts"></div>
 
+  <div id="bristol-stage-card" style="display:none;margin:0 1.25rem 1rem;padding:1rem 1.25rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-lg);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">The house on Walnut Street</div>
+        <div id="stage-title" style="font-size:14px;font-weight:600;color:var(--text);"></div>
+        <div id="stage-sub" style="font-size:12px;color:var(--text2);margin-top:2px;font-style:italic;"></div>
+      </div>
+      <div id="stage-icon" style="font-size:24px;flex-shrink:0;"></div>
+    </div>
+    <div style="height:0.5px;background:var(--border);margin-bottom:10px;"></div>
+    <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">What Bristol needs next</div>
+    <div id="stage-goals"></div>
+  </div>
+
   <div id="quest-joy-card" style="display:none;margin:0 1.25rem 1rem;">
     <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;padding:0 2px;">This quest</div>
     <div id="quest-joy-together" style="display:none;padding:10px 14px;background:var(--pink-dim);border:0.5px solid var(--pink);border-radius:var(--r-lg);margin-bottom:6px;">
@@ -1150,6 +1164,7 @@ async function loadHomeTasks(){
   updateHearthStats(data.tasks);
   renderOpeningBeat();
   renderQuestJoys();
+  renderStageCard();
   renderHomeTasks();
 }
 function renderOpeningBeat(){
@@ -1630,7 +1645,146 @@ async function reopenCase(e,id){
 
 function formatDate(str){if(!str)return'';try{const d=new Date(str.includes('T')?str:str+'T12:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch(e){return '';}}
 
-// ── CONFETTI ──
+// ── BRISTOL STAGE SYSTEM ──
+const STAGES={
+  residents:{
+    key:'residents',
+    title:'Residents',
+    sub:'The house is deciding.',
+    icon:'🏚️',
+    mood:['Bristol is quiet. Something in the walls is watching.','The house is getting used to you. The sprite has opinions but hasn\'t shared them yet.','The Delaware ran quietly last night. Nothing remarkable. Not yet.']
+  },
+  stewards:{
+    key:'stewards',
+    title:'Stewards',
+    sub:'The house has chosen you.',
+    icon:'🏠',
+    mood:['The kitchen smells better lately. The sprite is pleased.','Midge filed a formal acknowledgment. You\'re on the union\'s good list.','Bristol is steadier than it was. The neighborhood has noticed.']
+  },
+  caretakers:{
+    key:'caretakers',
+    title:'Caretakers',
+    sub:'Bristol is better because of you.',
+    icon:'🏡',
+    mood:['The house on Walnut Street hums with something that is not quite satisfaction but is close.','The Water Spirit mentioned you favorably. That almost never happens.','The Library Entity left a volume on the kitchen table. A gift. It doesn\'t do that for everyone.']
+  }
+};
+
+function getProgress(){
+  try{
+    const saved=localStorage.getItem('rs_progress');
+    return saved?JSON.parse(saved):{
+      stage:'residents',
+      questsCompleted:0,
+      highQuestCount:0,
+      debriefCount:0,
+      cumulativeFavor:0,
+      spriteName:'',
+      spriteLettersEarned:0
+    };
+  }catch(e){
+    return{stage:'residents',questsCompleted:0,highQuestCount:0,debriefCount:0,cumulativeFavor:0,spriteName:'',spriteLettersEarned:0};
+  }
+}
+
+function saveProgress(p){
+  localStorage.setItem('rs_progress',JSON.stringify(p));
+}
+
+function checkStageAdvancement(p){
+  if(p.stage==='residents'&&p.highQuestCount>=3){
+    p.stage='stewards';
+  }
+  if(p.stage==='stewards'&&p.questsCompleted>=6&&p.cumulativeFavor>=50){
+    p.stage='caretakers';
+  }
+  return p;
+}
+
+function getStageGoals(p,boardData){
+  const goals=[];
+  const questCases=boardData.filter(t=>t.sprint==='Current'&&t.status!=='Done');
+  const doneCases=boardData.filter(t=>t.sprint==='Current'&&t.status==='Done');
+  const total=questCases.length+doneCases.length;
+  const pct=total>0?Math.round((doneCases.length/total)*100):0;
+
+  if(p.stage==='residents'){
+    // need 3 quests at 60%+ to advance
+    const remaining=Math.max(0,3-p.highQuestCount);
+    if(remaining>0){
+      goals.push({text:`Complete ${remaining} more quest${remaining>1?'s':''} at 60%+ to earn the house's trust`,progress:p.highQuestCount,total:3});
+    }
+    if(pct<60&&total>0){
+      goals.push({text:`Close ${Math.ceil(total*0.6)-doneCases.length} more case${Math.ceil(total*0.6)-doneCases.length>1?'s':''} this quest to hit 60%`,progress:doneCases.length,total:Math.ceil(total*0.6)});
+    }
+    if(p.debriefCount<2){
+      goals.push({text:`Run ${2-p.debriefCount} more nightly debrief${2-p.debriefCount>1?'s':''} together`,progress:p.debriefCount,total:2});
+    }
+  } else if(p.stage==='stewards'){
+    const remaining=Math.max(0,6-p.questsCompleted);
+    if(remaining>0){
+      goals.push({text:`${remaining} more quest${remaining>1?'s':''} until you become true Caretakers`,progress:p.questsCompleted,total:6});
+    }
+    const favorNeeded=Math.max(0,50-p.cumulativeFavor);
+    if(favorNeeded>0){
+      goals.push({text:`${favorNeeded} more favor needed — keep closing cases`,progress:p.cumulativeFavor,total:50});
+    }
+    const lettersNeeded=Math.max(0,3-p.spriteLettersEarned);
+    if(lettersNeeded>0&&p.spriteName){
+      goals.push({text:`The sprite's name begins with "${p.spriteName.slice(0,p.spriteLettersEarned||1)}" — earn ${lettersNeeded} more letter${lettersNeeded>1?'s':''}`,progress:p.spriteLettersEarned,total:3});
+    }
+  } else {
+    goals.push({text:'Bristol is in good hands. Keep going.',progress:null,total:null});
+  }
+  return goals.slice(0,3);
+}
+
+function renderStageCard(){
+  const p=getProgress();
+  const stage=STAGES[p.stage]||STAGES.residents;
+  const card=document.getElementById('bristol-stage-card');
+  if(!card)return;
+
+  document.getElementById('stage-title').textContent=stage.title;
+  document.getElementById('stage-sub').textContent=stage.sub;
+  document.getElementById('stage-icon').textContent=stage.icon;
+
+  const goals=getStageGoals(p,boardData);
+  const goalsEl=document.getElementById('stage-goals');
+  goalsEl.innerHTML=goals.map(g=>{
+    if(g.progress===null)return`<div style="font-size:13px;color:var(--text2);font-style:italic;">${g.text}</div>`;
+    const pct=g.total>0?Math.round((g.progress/g.total)*100):0;
+    return`<div style="margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">${g.text}</div>
+      <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(100,pct)}%;background:var(--accent);border-radius:2px;transition:width 0.4s ease;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  card.style.display='block';
+}
+
+// called when a quest completes — updates progress
+function recordQuestCompletion(successRate,favorEarned){
+  let p=getProgress();
+  p.questsCompleted=(p.questsCompleted||0)+1;
+  p.cumulativeFavor=(p.cumulativeFavor||0)+favorEarned;
+  if(successRate>=60)p.highQuestCount=(p.highQuestCount||0)+1;
+  // advance sprite name letters: one per 15 cumulative favor
+  p.spriteLettersEarned=Math.min(p.spriteName?p.spriteName.length:8,Math.floor(p.cumulativeFavor/15));
+  p=checkStageAdvancement(p);
+  saveProgress(p);
+}
+
+// called when a debrief completes
+function recordDebriefCompletion(){
+  const p=getProgress();
+  p.debriefCount=(p.debriefCount||0)+1;
+  saveProgress(p);
+}
+
+
 function fireConfetti(difficulty){
   const colors=['#2bb87a','#c8a84a','#cc4d7a','#3d8fd4','#d9603a','#f2efe9','#5ddba4','#e8c870'];
   const count=difficulty==='Volatile'?150:difficulty==='Heavy'?100:difficulty==='Medium'?60:35;
@@ -1958,7 +2112,7 @@ THE WORLD RULES:
 - Tone: Urban Folk / Low Fantasy. Whimsical but grounded. A fixed drain is as heroic as a sword fight.
 
 THE CAST:
-- The House Sprite: Unnamed still — earns its name incrementally through their success. Currently on letter ${Math.min(3,Math.floor((sprintSummary.totalFavor||0)/10)+1)} of its name. Obsessed with the kitchen. Rearranges spices when stressed.
+- The House Sprite: ${(()=>{const p=getProgress();if(!p.spriteName)return'Unnamed still — watching and waiting.';const revealed=p.spriteName.slice(0,p.spriteLettersEarned||0);return revealed?`Its name has been partially revealed: "${revealed}..." — ${p.spriteName.length-revealed.length} letters remain hidden. Obsessed with the kitchen.`:'Has a name but hasn\'t revealed it yet. Obsessed with the kitchen.';})()}
 - Midge: Local 7, Tooth Fairy Union. Official, high-strung, surprisingly warm when she respects you.
 - The Water Spirit: Ancient, moody, protective of the Delaware. Watching the riverfront development closely.
 - The Library Entity: Grundy Library, reference section. Judges quietly. Rewards competence.
@@ -2440,6 +2594,20 @@ async function finishPlanningWithBeat(type){
     cases:questCases.map(t=>({title:t.title,difficulty:t.difficulty,owner:t.owner})),
     p1Name:c.name,p2Name:c.partner
   };
+  // Generate Sprite name if this is the first quest
+  const p=getProgress();
+  if(!p.spriteName&&c.apiKey){
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':c.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:50,messages:[{role:'user',content:`You are the Chronicler of Walnut Street. Generate a single short name (4-8 letters) for the house sprite of a 1917 mill worker's house in Bristol PA. The sprite is kitchen-obsessed, slightly fussy, and deeply loyal. The name should feel old, slightly odd, and genuinely earned — like something a creature who has lived in walls for 100 years would answer to. Reply with ONLY the name, nothing else.`}]})
+      });
+      const data=await resp.json();
+      const spriteName=data.content[0].text.trim().replace(/[^a-zA-Z]/g,'');
+      if(spriteName){p.spriteName=spriteName;saveProgress(p);}
+    }catch(e){console.log('Sprite name generation failed',e);}
+  }
   showStatus('planning-status','info','Bristol stirs... setting the scene.');
   const beat=await generateOpeningBeat(questSummary);
   if(beat){
@@ -2557,6 +2725,7 @@ function prevStep(type){if(wizardState[type].step>0){wizardState[type].step--;re
 async function finishWizard(type){
   const c=getConfig();
   await post({action:'saveWizard',wizardType:type,answers:wizardState[type].answers,completedBy:c.name,timestamp:new Date().toISOString()});
+  if(type==='standup')recordDebriefCompletion();
   showStatus(type+'-status','success','Quest closed. Well done.');
   setTimeout(()=>{exitWizard(type);showPage('quest');},1500);
 }
@@ -2583,6 +2752,10 @@ async function finishAndGenerateStory(type){
   showStatus('debrief-status','info','Bristol is listening... writing the closing beat.');
   const chapter=await generateClosingChapter(summary);
   if(chapter){
+    // record quest completion for stage progression
+    const total=summary.casesCompleted.length+summary.casesOpen.length;
+    const successRate=total>0?Math.round((summary.casesCompleted.length/total)*100):0;
+    recordQuestCompletion(successRate,summary.totalFavor);
     localStorage.removeItem('rs_opening_beat');
     localStorage.removeItem('rs_opening_beat_quest');
     showStatus('debrief-status','success','Chapter '+chapter.num+' written. Check The Story.');
