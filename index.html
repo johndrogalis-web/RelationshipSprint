@@ -2173,7 +2173,7 @@ const PLANNING_STEPS=[
   {q:'How are you both feeling going into this quest?',hint:'Check in before diving into cases.',type:'choice',choices:['Energized and ready','Good, steady','A bit stretched thin','Honestly tired'],key:'energy'},
   {q:'What is the one thing this quest must accomplish?',hint:'Just one. The thing that makes this quest a success no matter what else.',type:'text',placeholder:"e.g. Actually have a real date night, not dinner in front of the TV",key:'mustDo'},
   {q:'When does this quest close?',hint:"Set an end date and we'll show a countdown on the Hearth.",type:'sprint-dates',key:'questEnd'},
-  {q:'Pick cases from the board for this quest.',hint:'Tap to select. Each case shows what it costs both of you. These move into your active quest.',type:'case-pick',key:'selectedCases'},
+  {q:'Pick cases from the board for this quest.',hint:'Tap to select. Cases from your last quest that are still open are included — re-select them to carry them forward, or leave them to move them back to the backlog.',type:'case-pick',key:'selectedCases'},
   {q:'Who is handling what this quest?',hint:'Reassign ownership for this sprint. Cases default to how they were logged but you can change anything here.',type:'ownership',key:'ownership'},
   {q:'Pick something good for this quest.',hint:'One thing to do together, one thing each for yourselves. These show up on the Hearth as reminders.',type:'joy-pick',key:'joys'},
   {q:'Anything that might get in the way?',hint:'Travel, work stress, family stuff. Name it now so you can plan around it.',type:'text',placeholder:'e.g. Work is really heavy this week...',key:'blockers'},
@@ -2261,7 +2261,7 @@ function startWizard(type){
   document.getElementById('quest-home').style.display='none';
   document.getElementById('schedule-event-section').style.display='none';
   document.getElementById('wizard-'+type).classList.add('active');
-  wizardState[type]={step:0,answers:{},selectedCaseIds:[],caseNotes:{},selectedJoys:{},selectedJoyTitles:{}};
+  wizardState[type]={step:0,answers:{},selectedCaseIds:[],caseNotes:{},selectedJoys:{},selectedJoyTitles:{},casePickSearch:''};
   buildWizard(type);
   // preload joys for planning wizard
   if(type==='planning'&&joysData.length===0){
@@ -2327,16 +2327,19 @@ function renderWizardStep(type){
     return;
   }
   if(s.type==='case-pick'){
-    const available=boardData.filter(t=>t.sprint==='Backlog'&&t.status!=='Done');
-    const sel=selectedCaseIds||[];
-    const items=available.length?available.map(t=>{
+    const available=boardData.filter(t=>t.status!=='Done'&&(t.sprint==='Backlog'||t.sprint==='Current'));
+    const sel=wizardState[type].selectedCaseIds||[];
+    const query=(wizardState[type].casePickSearch||'').toLowerCase();
+    const filtered=query?available.filter(t=>(t.title||'').toLowerCase().includes(query)||(t.notes||'').toLowerCase().includes(query)):available;
+    const items=filtered.length?filtered.map(t=>{
       const sug=getSuggestion(t);
+      const isCarryForward=t.sprint==='Current';
       return`<div class="case-pick-item ${sel.includes(t.id)?'selected':''}" onclick="togglePickCase('${type}','${t.id}')">
         <div class="cp-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></div>
         <div class="cp-body">
-          <div class="cp-title">${t.title}</div>
+          <div class="cp-title">${t.title}${isCarryForward?` <span style="font-size:10px;font-weight:600;color:var(--amber-text);background:var(--amber-dim);padding:1px 6px;border-radius:8px;margin-left:4px;">From last quest</span>`:''}</div>
           <div class="cp-meta">
-            <${weightBadge(t.difficulty||'Medium')}
+            ${weightBadge(t.difficulty||'Medium')}
             ${t.due?`<span style="font-size:11px;color:var(--text2);">Due ${formatDate(t.due)}</span>`:''}
           </div>
           <div class="cp-cost">
@@ -2347,8 +2350,20 @@ function renderWizardStep(type){
         </div>
       </div>`;
     }).join('')
+    :query?`<div class="empty-state" style="padding:1.5rem 0;"><p>No cases match "${query}".</p></div>`
     :'<div class="empty-state" style="padding:1.5rem 0;"><p>The board is clear. Log some cases first using the Log It button.</p></div>';
-    el.innerHTML=`<div class="wiz-q">${s.q}</div><div class="wiz-hint">${s.hint}</div><div style="margin-bottom:1rem;">${items}</div><div class="btn-row">${back}<button class="btn primary" onclick="confirmPickCases('${type}')">Open quest with ${sel.length} case${sel.length!==1?'s':''}</button></div>`;
+    el.innerHTML=`
+      <div class="wiz-q">${s.q}</div>
+      <div class="wiz-hint">${s.hint}</div>
+      <div class="board-search" style="margin:0 0 0.75rem;">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search cases..." value="${wizardState[type].casePickSearch||''}"
+          oninput="wizardState['${type}'].casePickSearch=this.value;renderWizardStep('${type}')"
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          style="font-size:14px;"/>
+      </div>
+      <div style="margin-bottom:1rem;">${items}</div>
+      <div class="btn-row">${back}<button class="btn primary" onclick="confirmPickCases('${type}')">Open quest with ${sel.length} case${sel.length!==1?'s':''}</button></div>`;
     return;
   }
   if(s.type==='ownership'){
@@ -2694,6 +2709,20 @@ function togglePickCase(type,id){
 async function confirmPickCases(type){
   const state=wizardState[type];const ids=state.selectedCaseIds;
   if(!ids.length){state.answers.selectedCases='No cases selected';advance(type);return;}
+
+  // First — clear out the old quest's cases:
+  // Done cases go to Backlog (they're finished, free them from Current)
+  // Open cases not re-selected go back to Backlog (not chosen for this quest)
+  const oldCurrent=boardData.filter(t=>t.sprint==='Current');
+  for(const t of oldCurrent){
+    if(!ids.includes(t.id)){
+      const newSprint='Backlog';
+      await post({action:'updateTask',id:t.id,sprint:newSprint});
+      boardData=boardData.map(c=>c.id===t.id?{...c,sprint:newSprint}:c);
+    }
+  }
+
+  // Now set the newly selected cases to Current
   const titles=[];
   for(const id of ids){
     await post({action:'updateTask',id,sprint:'Current'});
