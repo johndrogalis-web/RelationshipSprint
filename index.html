@@ -1296,8 +1296,11 @@ function renderHomeTasks(){
 function toggleHomeDone(i,id){
   const wasOpen=!homeTasksLocal[i]._localDone;
   homeTasksLocal[i]._localDone=!homeTasksLocal[i]._localDone;
-  post({action:'updateTask',id,status:homeTasksLocal[i]._localDone?'Done':'Open'});
-  boardData=boardData.map(t=>t.id===id?{...t,status:homeTasksLocal[i]._localDone?'Done':'Open',completed_at:homeTasksLocal[i]._localDone?new Date().toISOString():''}:t);
+  const isDone=homeTasksLocal[i]._localDone;
+  // when closing, move out of Current sprint so it doesn't linger
+  const sprintUpdate=isDone?{sprint:'Backlog'}:{};
+  post({action:'updateTask',id,status:isDone?'Done':'Open',...sprintUpdate});
+  boardData=boardData.map(t=>t.id===id?{...t,status:isDone?'Done':'Open',sprint:isDone?'Backlog':t.sprint,completed_at:isDone?new Date().toISOString():''}:t);
   if(wasOpen){
     const task=homeTasksLocal[i];
     fireConfetti(task.difficulty||task.effort_p1==='CostsMe'?'Heavy':'Medium');
@@ -1513,8 +1516,8 @@ function toggleCase(i){expandedCase=expandedCase===i?null:i;renderBoard();}
 async function closeCase(e,id,i){
   e.stopPropagation();
   const task=boardData.find(t=>t.id===id);
-  await post({action:'updateTask',id,status:'Done'});
-  boardData=boardData.map(t=>t.id===id?{...t,status:'Done',completed_at:new Date().toISOString()}:t);
+  await post({action:'updateTask',id,status:'Done',sprint:'Backlog'});
+  boardData=boardData.map(t=>t.id===id?{...t,status:'Done',sprint:'Backlog',completed_at:new Date().toISOString()}:t);
   if(task)fireConfetti(task.difficulty||'Medium');
   renderBoard();
 }
